@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeTracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>TimeTracker</h1>
+            <p class="subtitle">Keep track of your projects.</p>
+        </header>
+
+        <main>
+            <!-- Summary Dashboard -->
+            <section class="card summary-dashboard">
+                <div class="summary-item">
+                    <span class="summary-label">Today</span>
+                    <span class="summary-value" id="today-total">0h 0m</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">This Week</span>
+                    <span class="summary-value" id="week-total">0h 0m</span>
+                </div>
+            </section>
+
+            <!-- Add Project Form -->
+            <section class="card">
+                <h2>Add Project</h2>
+                <form id="project-form">
+                    <div class="input-group">
+                        <label for="project-name">Project Name</label>
+                        <input type="text" id="project-name" required placeholder="e.g. Website Redesign">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </form>
+            </section>
+
+            <!-- Add Task Form -->
+            <section class="card">
+                <h2>Log Task</h2>
+                <form id="task-form">
+                    <div class="input-group">
+                        <label for="task-desc">Description</label>
+                        <textarea id="task-desc" required placeholder="What are you working on?" rows="3"></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label for="task-project">Project</label>
+                        <select id="task-project" required>
+                            <option value="" disabled selected>Select a Project</option>
+                            <!-- Project options will be injected here -->
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="task-start">Start Time</label>
+                            <input type="datetime-local" id="task-start" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="task-end">End Time</label>
+                            <input type="datetime-local" id="task-end" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Log Time</button>
+                </form>
+            </section>
+
+            <!-- Projects & Time Summary -->
+            <section class="card">
+                <h2>Project Totals</h2>
+                <div id="project-list" class="project-list">
+                    <!-- Project totals will be injected here -->
+                    <p class="empty-state">No projects added yet.</p>
+                </div>
+                <div style="margin-top: 24px;">
+                    <button id="view-report" class="btn btn-secondary">View Report</button>
+                </div>
+            </section>
+
+            <!-- Recent Tasks -->
+            <section class="card">
+                <h2>Recent Tasks</h2>
+                <div id="task-list" class="task-list">
+                    <!-- Tasks will be injected here -->
+                    <p class="empty-state">No tasks logged yet.</p>
+                </div>
+            </section>
+
+            <!-- Data Management -->
+            <section class="card">
+                <h2>Data Management</h2>
+                <p class="subtitle" style="margin-bottom: 16px;">Export, import, or delete your locally stored data.</p>
+                <div class="form-row">
+                    <button id="export-data" class="btn btn-secondary">Export Data</button>
+                    <button id="import-data-btn" class="btn btn-secondary">Import Data</button>
+                    <!-- Hidden file input for importing -->
+                    <input type="file" id="import-data-input" accept=".json" style="display: none;">
+                </div>
+                <div style="margin-top: 16px;">
+                    <button id="reset-data" class="btn btn-danger">Reset All Data</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="report-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Time Tracking Report</h2>
+                <button id="close-modal" class="btn-close" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body" id="report-content">
+                <!-- Report injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
