@@ -8,6 +8,35 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Sidebar Toolbar -->
+    <nav class="sidebar">
+        <button id="toolbar-profile" class="sidebar-btn" title="Professional Profile">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+            </svg>
+        </button>
+        <button id="toolbar-add-customer" class="sidebar-btn" title="Customer Management">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+            </svg>
+        </button>
+        <button id="toolbar-manage-projects" class="sidebar-btn" title="Manage Projects">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v14.25A2.25 2.25 0 0 0 5.25 19.5h13.5a2.25 2.25 0 0 0 2.25-2.25V3m-18 0V3h18V3m-18 0h18M6.75 6h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 15h10.5" />
+            </svg>
+        </button>
+        <button id="toolbar-manage-invoices" class="sidebar-btn" title="Manage Invoices">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108a2.25 2.25 0 0 0-2.25-2.25H16.5m-3-1.5h-3a1.5 1.5 0 0 0-1.5 1.5V21a1.5 1.5 0 0 0 1.5 1.5h3a1.5 1.5 0 0 0 1.5-1.5V3a1.5 1.5 0 0 0-1.5-1.5Zm-6 3h.75m-.75 3h.75m-.75 3h.75" />
+            </svg>
+        </button>
+        <button id="toolbar-report" class="sidebar-btn" title="Download Backup" onclick="document.getElementById('export-data').click()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+        </button>
+    </nav>
+
     <div class="app-container">
         <header>
             <h1>TimeTracker</h1>
@@ -27,17 +56,11 @@
                 </div>
             </section>
 
-            <!-- Add Project Form -->
-            <section class="card">
-                <h2>Add Project</h2>
-                <form id="project-form">
-                    <div class="input-group">
-                        <label for="project-name">Project Name</label>
-                        <input type="text" id="project-name" required placeholder="e.g. Website Redesign">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Create Project</button>
-                </form>
-            </section>
+
+
+
+
+
 
             <!-- Add Task Form -->
             <section class="card">
@@ -47,20 +70,34 @@
                         <label for="task-desc">Description</label>
                         <textarea id="task-desc" required placeholder="What are you working on?" rows="3"></textarea>
                     </div>
-                    <div class="input-group">
-                        <label for="task-project">Project</label>
-                        <select id="task-project" required>
-                            <option value="" disabled selected>Select a Project</option>
-                            <!-- Project options will be injected here -->
-                        </select>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="task-project">Project</label>
+                            <select id="task-project" required>
+                                <option value="" disabled selected>Select a Project</option>
+                                <!-- Project options will be injected here -->
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="task-invoice">Invoice</label>
+                            <select id="task-invoice" required>
+                                <option value="" disabled selected>Select an Invoice</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-row">
                         <div class="input-group">
-                            <label for="task-start">Start Time</label>
+                            <label for="task-start" style="display: flex; justify-content: space-between; align-items: center;">
+                                Start Time 
+                                <button type="button" id="set-start-now" class="btn-icon-tiny" title="Set to Now">🕒</button>
+                            </label>
                             <input type="datetime-local" id="task-start" required>
                         </div>
                         <div class="input-group">
-                            <label for="task-end">End Time</label>
+                            <label for="task-end" style="display: flex; justify-content: space-between; align-items: center;">
+                                End Time 
+                                <button type="button" id="set-end-now" class="btn-icon-tiny" title="Set to Now">🕒</button>
+                            </label>
                             <input type="datetime-local" id="task-end" required>
                         </div>
                     </div>
@@ -106,12 +143,230 @@
         </main>
     </div>
 
+        </div>
+    </div>
+    
+    <!-- Add Customer Modal -->
+    <div id="add-customer-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Customer Management</h2>
+                <button id="close-add-customer" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>Add New Customer</h3>
+                <form id="customer-form" style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid var(--border-color);">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="customer-name">Customer Name</label>
+                            <input type="text" id="customer-name" required placeholder="e.g. ACME Corp">
+                        </div>
+                        <div class="input-group">
+                            <label for="customer-rate">Hourly Rate ($)</label>
+                            <input type="number" id="customer-rate" required min="0" step="0.01" value="0">
+                        </div>
+                    </div>
+                    <div class="input-group" style="margin-top: 16px;">
+                        <label for="customer-address">Address</label>
+                        <textarea id="customer-address" placeholder="123 Business St, Suite 100&#10;City, State, Zip" rows="2" style="width: 100%; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-family: inherit; font-size: 0.9rem;"></textarea>
+                    </div>
+                    <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" id="cancel-add-customer" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Customer</button>
+                    </div>
+                </form>
+
+                <h3 style="margin-top: 24px;">Existing Customers</h3>
+                <div id="customer-list-modal" class="customer-list" style="margin-top: 16px;">
+                    <!-- Customer list will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Management Modal -->
+    <div id="invoice-management-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Invoice Management</h2>
+                <button id="close-invoice-management" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>Create New Invoice</h3>
+                <form id="invoice-form">
+                    <div class="input-group">
+                        <label for="invoice-name">Invoice Name/Number</label>
+                        <input type="text" id="invoice-name" required placeholder="Suggested automatically...">
+                    </div>
+                    <div class="input-group" style="margin-top: 16px;">
+                        <label for="invoice-customer">Customer</label>
+                        <select id="invoice-customer" required>
+                            <option value="" disabled selected>Select a Customer</option>
+                            <!-- Customer options injected here -->
+                        </select>
+                    </div>
+                    <div class="form-row" style="margin-top: 16px;">
+                        <div class="input-group">
+                            <label for="invoice-start">Start Date</label>
+                            <input type="date" id="invoice-start" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="invoice-date">Submission Date (Due)</label>
+                            <input type="date" id="invoice-date" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 24px;">Create Invoice</button>
+                </form>
+
+
+                <h3 style="margin-top: 24px;">Existing Invoices</h3>
+                <div id="invoice-management-list" class="invoice-list">
+                    <!-- Invoice list will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Management Modal -->
+    <div id="project-management-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Project Management</h2>
+                <button id="close-project-management" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>Add New Project</h3>
+                <form id="project-form" style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid var(--border-color);">
+                    <div class="input-group">
+                        <label for="project-name">Project Name</label>
+                        <input type="text" id="project-name" required placeholder="e.g. Website Redesign">
+                    </div>
+                    <div class="input-group">
+                        <label for="project-customer">Customer</label>
+                        <select id="project-customer" required>
+                            <option value="" disabled selected>Select a Customer</option>
+                            <!-- Customer options injected here -->
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 12px;">Create Project</button>
+                </form>
+
+                <h3>Existing Projects</h3>
+                <div id="project-management-list" class="project-list">
+                    <!-- Project list will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Project Modal -->
+    <div id="edit-project-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Project</h2>
+                <button id="close-edit-project" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-project-form">
+                    <input type="hidden" id="edit-project-id">
+                    <div class="input-group">
+                        <label for="edit-project-name">Project Name</label>
+                        <input type="text" id="edit-project-name" required placeholder="e.g. Website Redesign">
+                    </div>
+                    <div class="input-group" style="margin-top: 16px;">
+                        <label for="edit-project-customer">Customer</label>
+                        <select id="edit-project-customer" required>
+                            <option value="" disabled selected>Select a Customer</option>
+                            <!-- Customer options injected here -->
+                        </select>
+                    </div>
+                    <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" id="cancel-edit-project" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Professional Profile Modal -->
+    <div id="consultant-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Professional Profile</h2>
+                <button id="close-consultant-modal" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="card-subtitle" style="margin-bottom: 24px;">Your information for invoice headers.</p>
+                <form id="consultant-form">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="consultant-name">Your Name / Business</label>
+                            <input type="text" id="consultant-name" placeholder="e.g. John Doe Consulting">
+                        </div>
+                        <div class="input-group">
+                            <label for="consultant-email">Email Address</label>
+                            <input type="email" id="consultant-email" placeholder="john@example.com">
+                        </div>
+                    </div>
+                    <div class="form-row" style="margin-top: 12px;">
+                        <div class="input-group">
+                            <label for="consultant-phone">Phone Number</label>
+                            <input type="text" id="consultant-phone" placeholder="+1 (555) 000-0000">
+                        </div>
+                    </div>
+                    <div class="input-group" style="margin-top: 12px;">
+                        <label for="consultant-address">Your Address</label>
+                        <textarea id="consultant-address" placeholder="Your Business Address" rows="2" style="width: 100%; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-family: inherit; font-size: 0.9rem;"></textarea>
+                    </div>
+                    <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" id="cancel-consultant" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Profile</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Edit Customer Modal -->
+    <div id="edit-customer-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Customer</h2>
+                <button id="close-edit-customer" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-customer-form">
+                    <input type="hidden" id="edit-customer-id">
+                    <div class="input-group">
+                        <label for="edit-customer-name">Customer Name</label>
+                        <input type="text" id="edit-customer-name" required placeholder="e.g. ACME Corp">
+                    </div>
+                    <div class="input-group" style="margin-top: 16px;">
+                        <label for="edit-customer-rate">Hourly Rate ($)</label>
+                        <input type="number" id="edit-customer-rate" required min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="input-group" style="margin-top: 16px;">
+                        <label for="edit-customer-address">Address</label>
+                        <textarea id="edit-customer-address" placeholder="Address" rows="2" style="width: 100%; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-family: inherit; font-size: 0.9rem;"></textarea>
+                    </div>
+                    <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" id="cancel-edit-customer" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Report Modal -->
     <div id="report-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Time Tracking Report</h2>
-                <button id="close-modal" class="btn-close" aria-label="Close modal">&times;</button>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <button id="print-report" class="btn-action-outline">Print</button>
+                    <button id="close-modal" class="btn-close" aria-label="Close modal">&times;</button>
+                </div>
             </div>
             <div class="modal-body" id="report-content">
                 <!-- Report injected here -->
