@@ -188,6 +188,11 @@ function setupEventListeners() {
         renderInvoiceList();
     });
 
+    document.getElementById('toolbar-manage-tasks').addEventListener('click', () => {
+        document.getElementById('manage-tasks-modal').classList.remove('hidden');
+        renderManageTaskList();
+    });
+
     window.closeConsultantModal = function() {
         document.getElementById('consultant-modal').classList.add('hidden');
     };
@@ -204,6 +209,14 @@ function setupEventListeners() {
         document.getElementById('invoice-management-modal').classList.add('hidden');
     };
 
+    window.closeManageTasksModal = function() {
+        document.getElementById('manage-tasks-modal').classList.add('hidden');
+    };
+
+    window.closeEditTaskModal = function() {
+        document.getElementById('edit-task-modal').classList.add('hidden');
+    };
+
     document.getElementById('close-consultant-modal').addEventListener('click', window.closeConsultantModal);
     document.getElementById('cancel-consultant').addEventListener('click', window.closeConsultantModal);
     
@@ -212,6 +225,9 @@ function setupEventListeners() {
 
     document.getElementById('close-project-management').addEventListener('click', window.closeProjectManagementModal);
     document.getElementById('close-invoice-management').addEventListener('click', window.closeInvoiceManagementModal);
+    document.getElementById('close-manage-tasks').addEventListener('click', window.closeManageTasksModal);
+    document.getElementById('close-edit-task').addEventListener('click', window.closeEditTaskModal);
+    document.getElementById('cancel-edit-task').addEventListener('click', window.closeEditTaskModal);
     
     document.getElementById('close-edit-project').addEventListener('click', window.closeEditProjectModal);
     document.getElementById('cancel-edit-project').addEventListener('click', window.closeEditProjectModal);
@@ -273,6 +289,31 @@ function setupEventListeners() {
     const setEndNowBtn = document.getElementById('set-end-now');
     if (setStartNowBtn) setStartNowBtn.addEventListener('click', () => setTimeToNow('task-start'));
     if (setEndNowBtn) setEndNowBtn.addEventListener('click', () => setTimeToNow('task-end'));
+
+    const setEditStartNowBtn = document.getElementById('set-edit-start-now');
+    const setEditEndNowBtn = document.getElementById('set-edit-end-now');
+    if (setEditStartNowBtn) setEditStartNowBtn.addEventListener('click', () => setTimeToNow('edit-task-start'));
+    if (setEditEndNowBtn) setEditEndNowBtn.addEventListener('click', () => setTimeToNow('edit-task-end'));
+
+    document.getElementById('edit-task-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit-task-id').value;
+        const desc = document.getElementById('edit-task-desc').value.trim();
+        const start = document.getElementById('edit-task-start').value;
+        const end = document.getElementById('edit-task-end').value;
+
+        const task = state.tasks.find(t => t.id === id);
+        if (task && desc && start && end) {
+            task.desc = desc;
+            task.start = start;
+            task.end = end;
+            task.durationMs = new Date(end) - new Date(start);
+            saveState();
+            alert('Task updated!');
+            window.closeEditTaskModal();
+            renderManageTaskList(); // Refresh the list
+        }
+    });
 
     document.getElementById('edit-project-form').addEventListener('submit', (e) => {
         e.preventDefault();
@@ -463,33 +504,32 @@ function setupEventListeners() {
 
         let html = `
             <div style="font-family: Inter, sans-serif; color: #0f172a;">
-                <p style="color: #64748b; margin-bottom: 24px; font-size: 0.9rem;">Report Generated on ${now.toLocaleString()}</p>
-                
-                <h3 style="font-size: 1.1rem; margin-bottom: 24px; text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; color: var(--primary-color);">${reportTitle}</h3>
-                
-                ${invoice && invoice.startDate && invoice.submissionDate ? `
-                    <p style="color: #64748b; margin-top: -16px; margin-bottom: 24px; font-size: 0.85rem; text-align: center;">
-                        Period: ${new Date(invoice.startDate + 'T00:00:00').toLocaleDateString()} to ${new Date(invoice.submissionDate + 'T00:00:00').toLocaleDateString()}
-                    </p>
-                ` : ''}
-                
-                <div style="display: flex; justify-content: space-between; gap: 40px; margin-bottom: 32px; align-items: flex-start;">
-                    ${fromHtml}
-                    ${toHtml}
-                </div>
-
-                <div style="display: flex; gap: 40px; margin-bottom: 32px; border-top: 1px solid var(--border-color); padding-top: 16px;">
-                    <div>
-                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Total Time</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${formatDuration(totalDuration)}</div>
-                    </div>
-                    ${isBilling ? `
-                    <div>
-                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Total Amount</div>
-                        <div id="report-total-amount" style="font-size: 1.5rem; font-weight: 700; color: #059669;">$0.00</div>
-                    </div>
-                    ` : ''}
-                </div>
+                            <p style="color: #64748b; margin-bottom: 24px; font-size: 0.9rem;">Report Generated on ${now.toLocaleString()}</p>
+                            
+                            <div class="report-header" style="margin-bottom: 32px;">
+                                ${invoice && invoice.startDate && invoice.submissionDate ? `
+                                    <p style="color: #64748b; margin-top: -16px; margin-bottom: 24px; font-size: 0.85rem; text-align: center;">
+                                        Period: ${new Date(invoice.startDate + 'T00:00:00').toLocaleDateString()} to ${new Date(invoice.submissionDate + 'T00:00:00').toLocaleDateString()}
+                                    </p>
+                                ` : ''}
+                                
+                                <div style="display: flex; justify-content: space-between; gap: 40px; margin-bottom: 24px; align-items: flex-start;">
+                                    ${fromHtml}
+                                    ${toHtml}
+                                </div>
+                                <div style="display: flex; gap: 40px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                                    <div>
+                                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Total Time</div>
+                                        <div style="font-size: 1.5rem; font-weight: 700;">${formatDuration(totalDuration)}</div>
+                                    </div>
+                                    ${isBilling ? `
+                                    <div>
+                                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Total Amount</div>
+                                        <div id="report-total-amount-header" style="font-size: 1.5rem; font-weight: 700; color: #059669;">$0.00</div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
         `;
 
         if (isBilling) {
@@ -514,7 +554,19 @@ function setupEventListeners() {
         if (relevantProjects.length === 0) {
             html += `<p style="color: var(--text-secondary); font-style: italic;">No tasks found.</p>`;
         } else if (isBilling) {
-            // BILLING REPORT: Show Projects with costs
+            html += `
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border-color); text-align: left; color: var(--text-secondary);">
+                            <th style="padding: 12px 8px;">Project</th>
+                            <th style="padding: 12px 8px;">Hours</th>
+                            <th style="padding: 12px 8px; text-align: right;">Rate</th>
+                            <th style="padding: 12px 8px; text-align: right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
             relevantProjects.forEach(p => {
                 const customer = state.customers.find(c => c.id === p.customerId);
                 const rate = (invoice && invoice.lockedRate !== undefined) ? invoice.lockedRate : (customer ? customer.hourlyRate : 0);
@@ -524,36 +576,52 @@ function setupEventListeners() {
                 reportTotalAmount += roundedAmount;
 
                 html += `
-                    <div style="margin-bottom: 16px; padding: 12px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid var(--primary-color); display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-weight: 600;">${p.name}</div>
-                            <div style="font-size: 0.85rem; color: var(--text-secondary);">${formatDuration(projectTotalMs)} at ${formatCurrency(rate)}/hr</div>
-                        </div>
-                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--primary-color);">${formatCurrency(roundedAmount, 0)}</div>
-                    </div>
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 12px 8px; font-weight: 600;">${p.name}</td>
+                        <td style="padding: 12px 8px;">${formatDuration(projectTotalMs)}</td>
+                        <td style="padding: 12px 8px; text-align: right;">${formatCurrency(rate)}/hr</td>
+                        <td style="padding: 12px 8px; text-align: right; font-weight: 700;">${formatCurrency(roundedAmount, 0)}</td>
+                    </tr>
                 `;
             });
+
+            html += `
+                    </tbody>
+                    <tfoot>
+                        <tr style="border-top: 2px solid var(--primary-color);">
+                            <td colspan="3" style="padding: 16px 8px; font-weight: 700; font-size: 1.1rem; text-align: right;">Total Amount Due:</td>
+                            <td style="padding: 16px 8px; font-weight: 700; font-size: 1.1rem; text-align: right; color: #059669;">${formatCurrency(reportTotalAmount, 0)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            `;
         } else {
-            // TASK REPORT: Show individual tasks, NO costs
             relevantProjects.forEach(p => {
-                const projectTasks = filteredTasks.filter(t => t.projectId === p.id);
+                const projectTasks = filteredTasks
+                    .filter(t => t.projectId === p.id)
+                    .sort((a, b) => new Date(a.start) - new Date(b.start));
+                const projectDurationMs = projectTasks.reduce((sum, t) => sum + t.durationMs, 0);
+
                 html += `
-                    <div style="margin-bottom: 24px;">
-                        <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 12px; color: var(--text-secondary);">${p.name}</div>
-                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <div class="report-project-block" style="margin-bottom: 32px;">
+                        <div style="background-color: #f8fafc; padding: 8px 12px; border-left: 4px solid var(--primary-color); font-weight: 700; font-size: 1rem; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; border-radius: 0 4px 4px 0; margin-bottom: 8px;">
+                            <span>Project: ${p.name}</span>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">Total: ${formatDuration(projectDurationMs)}</span>
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                             <thead>
-                                <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-secondary);">
-                                    <th style="padding: 8px 0;">Date</th>
-                                    <th style="padding: 8px 0;">Description</th>
-                                    <th style="padding: 8px 0; text-align: right;">Duration</th>
+                                <tr style="border-bottom: 2px solid var(--border-color); text-align: left; color: var(--text-secondary);">
+                                    <th style="padding: 12px 8px; width: 20%;">Date</th>
+                                    <th style="padding: 12px 8px; width: 65%;">Description</th>
+                                    <th style="padding: 12px 8px; width: 15%; text-align: right;">Duration</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${projectTasks.map(t => `
                                     <tr style="border-bottom: 1px solid #f1f5f9;">
-                                        <td style="padding: 8px 0; white-space: nowrap;">${new Date(t.start).toLocaleDateString()}</td>
-                                        <td style="padding: 8px 16px; color: #475569;">${t.desc}</td>
-                                        <td style="padding: 8px 0; text-align: right; font-weight: 600;">${formatDuration(t.durationMs)}</td>
+                                        <td style="padding: 12px 8px; color: var(--text-secondary);">${new Date(t.start).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                                        <td style="padding: 12px 8px; font-weight: 500;">${t.desc}</td>
+                                        <td style="padding: 12px 8px; text-align: right; font-weight: 600;">${formatDuration(t.durationMs)}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -567,7 +635,7 @@ function setupEventListeners() {
         document.getElementById('report-content').innerHTML = html;
         
         if (isBilling) {
-            const amountElement = document.getElementById('report-total-amount');
+            const amountElement = document.getElementById('report-total-amount-header');
             if (amountElement) amountElement.textContent = formatCurrency(reportTotalAmount, 0);
         }
         
@@ -742,6 +810,7 @@ function renderAll() {
     renderInvoiceList();
     renderTaskList();
     renderSummaries();
+    renderDashboardActiveInvoices();
 }
 
 function renderCustomerOptions() {
@@ -840,6 +909,42 @@ function renderInvoiceOptions() {
     }
 }
 
+function getInvoiceItemHtml(i) {
+    const customer = state.customers.find(c => c.id === i.customerId);
+    let actions = '';
+    let statusBadge = `<span class="status-badge status-${i.status}">${i.status}</span>`;
+
+    if (i.status === 'active') {
+        actions = `<button class="btn-action" onclick="submitInvoice('${i.id}')">Submit</button>`;
+    } else if (i.status === 'submitted') {
+        actions = `<button class="btn-action" onclick="payInvoice('${i.id}')">Mark Paid</button>`;
+    }
+
+    const invoiceTasks = state.tasks.filter(t => t.invoiceId === i.id);
+    const totalDurationMs = invoiceTasks.reduce((sum, t) => sum + t.durationMs, 0);
+    const rate = (i.lockedRate !== undefined) ? i.lockedRate : (customer ? customer.hourlyRate : 0);
+    const totalAmount = Math.round((totalDurationMs / 3600000) * rate);
+
+    return `
+        <div class="invoice-item-compact">
+            <div class="invoice-info">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <strong>${i.name}</strong>
+                    ${statusBadge}
+                    <span style="font-weight: 700; color: #059669; margin-left: auto; font-size: 0.95rem;">${formatCurrency(totalAmount, 0)}</span>
+                </div>
+                <div class="invoice-meta">${customer ? customer.name : 'Unknown'} &bull; Period: ${i.startDate} to ${i.submissionDate}</div>
+            </div>
+            <div class="invoice-actions" style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+                <button class="btn-action-outline" onclick="showReport('${i.id}', 'tasks')" title="View Task Details (No Rates)">Tasks</button>
+                <button class="btn-action-outline" onclick="showReport('${i.id}', 'billing')" title="View Billing Summary">Billing</button>
+                ${actions}
+                <button class="btn-delete-small" onclick="deleteInvoice('${i.id}')" title="Delete Invoice">&times;</button>
+            </div>
+        </div>
+    `;
+}
+
 function renderInvoiceList() {
     const container = document.getElementById('invoice-management-list');
     if (!container) return;
@@ -848,35 +953,23 @@ function renderInvoiceList() {
         return;
     }
 
-    container.innerHTML = state.invoices.map(i => {
-        const customer = state.customers.find(c => c.id === i.customerId);
-        let actions = '';
-        let statusBadge = `<span class="status-badge status-${i.status}">${i.status}</span>`;
+    container.innerHTML = state.invoices.map(getInvoiceItemHtml).join('');
+}
 
-        if (i.status === 'active') {
-            actions = `<button class="btn-action" onclick="submitInvoice('${i.id}')">Submit</button>`;
-        } else if (i.status === 'submitted') {
-            actions = `<button class="btn-action" onclick="payInvoice('${i.id}')">Mark Paid</button>`;
-        }
+function renderDashboardActiveInvoices() {
+    const section = document.getElementById('active-invoices-dashboard-section');
+    const list = document.getElementById('active-invoices-dashboard-list');
+    if (!section || !list) return;
 
-        return `
-            <div class="invoice-item-compact">
-                <div class="invoice-info">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <strong>${i.name}</strong>
-                        ${statusBadge}
-                    </div>
-                    <span class="invoice-meta">${customer ? customer.name : 'Unknown'} &bull; Period: ${i.startDate} to ${i.submissionDate}</span>
-                </div>
-                <div class="invoice-actions" style="display: flex; gap: 8px; align-items: center;">
-                    <button class="btn-action-outline" onclick="showReport('${i.id}', 'tasks')" title="View Task Details (No Rates)">Tasks</button>
-                    <button class="btn-action-outline" onclick="showReport('${i.id}', 'billing')" title="View Billing Summary">Billing</button>
-                    ${actions}
-                    <button class="btn-delete-small" onclick="deleteInvoice('${i.id}')" title="Delete Invoice">&times;</button>
-                </div>
-            </div>
-        `;
-    }).join('');
+    const activeInvoices = state.invoices.filter(i => i.status === 'active');
+
+    if (activeInvoices.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+    list.innerHTML = activeInvoices.map(getInvoiceItemHtml).join('');
 }
 
 function renderProjectList() {
@@ -974,6 +1067,69 @@ function renderTaskList() {
         `;
     }).join('');
 }
+
+function deleteTask(id) {
+    if (confirm('Are you sure you want to delete this task?')) {
+        state.tasks = state.tasks.filter(t => t.id !== id);
+        saveState();
+        renderManageTaskList(); // Always try to refresh management list
+    }
+}
+
+function renderManageTaskList() {
+    const list = document.getElementById('manage-tasks-list');
+    if (!list) return;
+
+    // Filter tasks that are in ACTIVE invoices
+    const activeInvoiceIds = state.invoices.filter(i => i.status === 'active').map(i => i.id);
+    const activeTasks = state.tasks.filter(t => activeInvoiceIds.includes(t.invoiceId));
+
+    if (activeTasks.length === 0) {
+        list.innerHTML = '<p class="empty-state">No tasks found in active invoices.</p>';
+        return;
+    }
+
+    // Sort by start date desc
+    const sortedTasks = [...activeTasks].sort((a, b) => new Date(b.start) - new Date(a.start));
+
+    list.innerHTML = sortedTasks.map(t => {
+        const startD = new Date(t.start);
+        const dateStr = startD.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        const project = state.projects.find(p => p.id === t.projectId);
+        
+        return `
+            <div class="task-item" style="padding: 16px; border-bottom: 1px solid var(--border-color);">
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="font-weight: 600; font-size: 0.95rem;">${t.desc}</span>
+                        <span style="font-weight: 700; color: var(--primary-color);">${formatDuration(t.durationMs)}</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: 8px; align-items: center;">
+                        <span class="task-project-badge" style="margin-right: 0;">${project ? project.name : 'Unknown Project'}</span>
+                        <span>•</span>
+                        <span>${dateStr}</span>
+                    </div>
+                </div>
+                <div class="task-actions" style="margin-left: 16px;">
+                    <button onclick="window.openEditTaskModal('${t.id}')" class="btn-action-outline">Edit</button>
+                    <button onclick="deleteTask('${t.id}')" class="btn-delete" style="font-size: 1.2rem;">&times;</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.openEditTaskModal = function(taskId) {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    document.getElementById('edit-task-id').value = task.id;
+    document.getElementById('edit-task-desc').value = task.desc;
+    document.getElementById('edit-task-start').value = task.start;
+    document.getElementById('edit-task-end').value = task.end;
+
+    document.getElementById('edit-task-modal').classList.remove('hidden');
+};
 
 function renderSummaries() {
     const now = new Date();

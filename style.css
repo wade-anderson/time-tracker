@@ -162,6 +162,7 @@ h2 {
 
 .form-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 16px;
 }
 
@@ -570,4 +571,115 @@ input:focus, select:focus, textarea:focus {
 .btn-action-outline:hover {
     background-color: #eff6ff;
     transform: translateY(-1px);
+}
+
+#print-page-num {
+    display: none;
+}
+
+/* Print Styles - Simplified for maximum reliability */
+@media print {
+    @page {
+        margin: 1.5cm;
+    }
+    
+    html, body {
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+        background: white !important;
+        counter-reset: page 0;
+    }
+    
+    /* Hide everything except the report modal */
+    body > *:not(#report-modal) {
+        display: none !important;
+    }
+
+    /* Reset modal for print */
+    #report-modal {
+        display: block !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        background: white !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    #report-modal .modal-content {
+        display: block !important;
+        position: static !important;
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        transform: none !important;
+    }
+
+    /* Hide modal UI elements */
+    .modal-header h2, .btn-close, .modal-footer, #print-report {
+        display: none !important;
+    }
+
+    .modal-body {
+        display: block !important;
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .report-project-block {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-bottom: 30px !important;
+    }
+
+    /* Report specific styling */
+    .report-header {
+        margin-bottom: 40px !important;
+        page-break-inside: avoid;
+    }
+
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        page-break-inside: auto;
+    }
+
+    tr {
+        page-break-inside: avoid;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+
+    tfoot {
+        display: table-footer-group;
+    }
+
+    /* Ensure text colors are dark enough and no backgrounds hidden data */
+    * {
+        color: black !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
 }

@@ -30,6 +30,11 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108a2.25 2.25 0 0 0-2.25-2.25H16.5m-3-1.5h-3a1.5 1.5 0 0 0-1.5 1.5V21a1.5 1.5 0 0 0 1.5 1.5h3a1.5 1.5 0 0 0 1.5-1.5V3a1.5 1.5 0 0 0-1.5-1.5Zm-6 3h.75m-.75 3h.75m-.75 3h.75" />
             </svg>
         </button>
+        <button id="toolbar-manage-tasks" class="sidebar-btn" title="Manage Tasks">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-3.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+            </svg>
+        </button>
         <button id="toolbar-report" class="sidebar-btn" title="Download Backup" onclick="document.getElementById('export-data').click()">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -103,6 +108,14 @@
                     </div>
                     <button type="submit" class="btn btn-primary">Log Time</button>
                 </form>
+            </section>
+
+            <!-- Active Invoices Dashboard -->
+            <section class="card" id="active-invoices-dashboard-section" style="display: none;">
+                <h2>Active Invoices</h2>
+                <div id="active-invoices-dashboard-list" class="invoice-list">
+                    <!-- Active invoices will be injected here -->
+                </div>
             </section>
 
             <!-- Projects & Time Summary -->
@@ -327,6 +340,61 @@
             </div>
         </div>
     </div>
+    <!-- Manage Tasks Modal -->
+    <div id="manage-tasks-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Manage Tasks</h2>
+                <button id="close-manage-tasks" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="subtitle" style="margin-bottom: 16px;">Review and edit tasks currently in your Active invoices.</p>
+                <div id="manage-tasks-list" class="task-list">
+                    <!-- Tasks will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div id="edit-task-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>Edit Task</h2>
+                <button id="close-edit-task" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-task-form">
+                    <input type="hidden" id="edit-task-id">
+                    <div class="input-group">
+                        <label for="edit-task-desc">Description</label>
+                        <textarea id="edit-task-desc" required rows="3"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="edit-task-start" style="display: flex; justify-content: space-between; align-items: center;">
+                                Start Time 
+                                <button type="button" id="set-edit-start-now" class="btn-icon-tiny" title="Set to Now">🕒</button>
+                            </label>
+                            <input type="datetime-local" id="edit-task-start" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-task-end" style="display: flex; justify-content: space-between; align-items: center;">
+                                End Time 
+                                <button type="button" id="set-edit-end-now" class="btn-icon-tiny" title="Set to Now">🕒</button>
+                            </label>
+                            <input type="datetime-local" id="edit-task-end" required>
+                        </div>
+                    </div>
+                    <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" id="cancel-edit-task" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Edit Customer Modal -->
     <div id="edit-customer-modal" class="modal hidden">
         <div class="modal-content">
