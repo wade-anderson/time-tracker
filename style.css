@@ -668,12 +668,9 @@ input:focus, select:focus, textarea:focus {
         page-break-inside: avoid;
     }
 
-    thead {
-        display: table-header-group;
-    }
-
+    /* thead { display: table-header-group; } - Keep headers repeating for clarity if desired */
     tfoot {
-        display: table-footer-group;
+        display: table-row-group;
     }
 
     /* Ensure text colors are dark enough and no backgrounds hidden data */
