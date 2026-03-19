@@ -1,0 +1,27 @@
+{
+  "name": "test1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wade-anderson/test1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/wade-anderson/test1/issues"
+  },
+  "homepage": "https://github.com/wade-anderson/test1#readme",
+  "dependencies": {
+    "jsdom": "^29.0.0"
+  }
+}
