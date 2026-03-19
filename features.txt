@@ -10,3 +10,7 @@ Add a Create In Progress task button to the Log Task card.  When clicked it will
 Add a Delete capability to the In Progress Task card.  When clicked it will delete the in progress task.
 
 Add page numbers to the printed reports, but not on the screen versions of the reports.
+
+Ask for confirmation when deleting a task, invoice, customer, or project.
+
+Automatically download a backup when a task is logged.

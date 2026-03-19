@@ -19,3 +19,5 @@
     12.5. **Deletion**: Provide a Delete capability (an '×' button) on the In Progress card to instantly discard and delete the in-progress task.
 13. **User Interface Accessibility**: When a popup/modal window is active, pressing the ESC key must cancel and close it.
 14. **Data Storage Mechanism**: Application state must be persisted asynchronously using IndexedDB to support larger datasets, ensuring automatic migration for any legacy data residing in localStorage.
+15. **Data Deletion Safeguards**: The system must explicitly ask for user confirmation before executing the deletion of any task, invoice, customer, or project to prevent accidental data loss.
+16. **Automatic Backups**: The system must automatically generate and download a comprehensive JSON backup of all application data immediately after a user successfully logs a new task or initiates an in-progress task.

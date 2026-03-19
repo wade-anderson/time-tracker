@@ -17,10 +17,11 @@ async function runTests() {
     const dom = new JSDOM(html, { runScripts: "dangerously", url: "http://localhost/" });
     const window = dom.window;
     const document = window.document;
-    
     // Use JSDOM's native localStorage instead of custom mock
     window.alert = () => {};
     window.confirm = () => true;
+    window.URL.createObjectURL = () => "blob:http://localhost/mock-url";
+    window.URL.revokeObjectURL = () => {};
     
     // Inject fake-indexeddb into JSDOM
     window.indexedDB = global.indexedDB;

@@ -71,8 +71,11 @@ async function init() {
 
 // Global exposure for inline onclick
 window.deleteTask = function(id) {
-    state.tasks = state.tasks.filter(t => t.id !== id);
-    saveState();
+    if (confirm('Are you sure you want to delete this task?')) {
+        state.tasks = state.tasks.filter(t => t.id !== id);
+        saveState();
+        renderAll();
+    }
 };
 
 window.deleteCustomer = function(id) {
@@ -571,6 +574,9 @@ function setupEventListeners() {
         
         saveState();
         renderAll();
+        
+        // Auto-backup
+        window.downloadBackup();
     });
 
     document.getElementById('log-in-progress-task').addEventListener('click', () => {
@@ -824,8 +830,7 @@ function setupEventListeners() {
         }
     });
 
-    // Data Management
-    document.getElementById('export-data').addEventListener('click', () => {
+    window.downloadBackup = function() {
         const dataStr = JSON.stringify(state, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -838,6 +843,11 @@ function setupEventListeners() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    };
+
+    // Data Management
+    document.getElementById('export-data').addEventListener('click', () => {
+        window.downloadBackup();
     });
 
     document.getElementById('import-data-btn').addEventListener('click', () => {
@@ -1282,19 +1292,11 @@ function renderTaskList() {
                 </div>
                 <div class="task-actions">
                     <span class="task-duration">${formatDuration(t.durationMs)}</span>
-                    <button class="btn-delete" onclick="deleteTask('${t.id}')" aria-label="Delete task">&times;</button>
+                    <button class="btn-delete" onclick="window.deleteTask('${t.id}')" aria-label="Delete task">&times;</button>
                 </div>
             </div>
         `;
     }).join('');
-}
-
-function deleteTask(id) {
-    if (confirm('Are you sure you want to delete this task?')) {
-        state.tasks = state.tasks.filter(t => t.id !== id);
-        saveState();
-        renderAll();
-    }
 }
 
 function renderManageTaskList() {
@@ -1334,7 +1336,7 @@ function renderManageTaskList() {
                 </div>
                 <div class="task-actions" style="margin-left: 16px;">
                     <button onclick="window.openEditTaskModal('${t.id}')" class="btn-action-outline">Edit</button>
-                    <button onclick="deleteTask('${t.id}')" class="btn-delete" style="font-size: 1.2rem;">&times;</button>
+                    <button onclick="window.deleteTask('${t.id}')" class="btn-delete" style="font-size: 1.2rem;">&times;</button>
                 </div>
             </div>
         `;
