@@ -350,6 +350,17 @@ input:focus, select:focus, textarea:focus {
     border: 1px solid var(--border-color);
 }
 
+.task-requestor-badge {
+    display: inline-block;
+    background-color: #f1f5f9;
+    color: #475569;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin-right: 8px;
+    border: 1px solid #e2e8f0;
+}
+
 .task-actions {
     display: flex;
     align-items: center;

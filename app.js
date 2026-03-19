@@ -38,6 +38,7 @@ window.openEditCustomerModal = function(id) {
     document.getElementById('edit-customer-name').value = customer.name;
     document.getElementById('edit-customer-rate').value = customer.hourlyRate || 0;
     document.getElementById('edit-customer-address').value = customer.address || '';
+    document.getElementById('edit-customer-requestors').value = (customer.requestors || []).join(', ');
     
     document.getElementById('edit-customer-modal').classList.remove('hidden');
 };
@@ -80,11 +81,12 @@ function loadState() {
         try {
             const parsed = JSON.parse(saved);
             
-            // Ensure all customers have an hourlyRate and address
+            // Ensure all customers have an hourlyRate, address, and requestors
             if (parsed.customers) {
                 parsed.customers.forEach(c => {
                     if (c.hourlyRate === undefined) c.hourlyRate = 0;
                     if (c.address === undefined) c.address = '';
+                    if (!c.requestors) c.requestors = [];
                 });
             }
             if (!parsed.consultant) {
@@ -238,6 +240,7 @@ function setupEventListeners() {
     document.getElementById('cancel-edit-task').addEventListener('click', window.closeEditTaskModal);
 
     document.getElementById('edit-task-project').addEventListener('change', () => {
+        renderRequestorOptions('edit-task-project', 'edit-task-requestor');
         renderInvoiceOptionsForSelect('edit-task-invoice', 'edit-task-project');
     });
     
@@ -249,21 +252,25 @@ function setupEventListeners() {
         const nameInput = document.getElementById('customer-name');
         const rateInput = document.getElementById('customer-rate');
         const addressInput = document.getElementById('customer-address');
+        const requestorsInput = document.getElementById('customer-requestors');
         const name = nameInput.value.trim();
         const rate = parseFloat(rateInput.value) || 0;
         const address = addressInput.value.trim();
+        const requestors = requestorsInput.value.split(',').map(s => s.trim()).filter(s => s !== '');
 
         if (name) {
             const customer = { 
                 id: Date.now().toString(), 
                 name: name,
                 hourlyRate: rate,
-                address: address
+                address: address,
+                requestors: requestors
             };
             state.customers.push(customer);
             nameInput.value = '';
-            rateInput.value = '';
+            rateInput.value = '0';
             addressInput.value = '';
+            requestorsInput.value = '';
             saveState();
         }
     });
@@ -274,12 +281,15 @@ function setupEventListeners() {
         const name = document.getElementById('edit-customer-name').value.trim();
         const rate = parseFloat(document.getElementById('edit-customer-rate').value) || 0;
         const address = document.getElementById('edit-customer-address').value.trim();
+        const requestorsStr = document.getElementById('edit-customer-requestors').value;
+        const requestors = requestorsStr.split(',').map(s => s.trim()).filter(s => s !== '');
 
         const customer = state.customers.find(c => c.id === id);
         if (customer) {
             customer.name = name;
             customer.hourlyRate = rate;
             customer.address = address;
+            customer.requestors = requestors;
             saveState();
             alert('Customer updated!');
             window.closeEditCustomerModal();
@@ -315,6 +325,7 @@ function setupEventListeners() {
         const end = document.getElementById('edit-task-end').value;
         const projectId = document.getElementById('edit-task-project').value;
         const invoiceId = document.getElementById('edit-task-invoice').value;
+        const requestor = document.getElementById('edit-task-requestor').value;
 
         const task = state.tasks.find(t => t.id === id);
         if (task && desc && start && end && projectId && invoiceId) {
@@ -323,6 +334,7 @@ function setupEventListeners() {
             task.end = end;
             task.projectId = projectId;
             task.invoiceId = invoiceId;
+            task.requestor = requestor;
             task.durationMs = new Date(end) - new Date(start);
             saveState();
             alert('Task updated!');
@@ -429,6 +441,12 @@ function setupEventListeners() {
 
     // Update invoice options when task project changes
     document.getElementById('task-project').addEventListener('change', () => {
+        const projectSelect = document.getElementById('task-project');
+        const project = state.projects.find(p => p.id === projectSelect.value);
+        if (project) {
+            const customer = state.customers.find(c => c.id === project.customerId);
+            renderRequestorOptions('task-project', 'task-requestor');
+        }
         renderInvoiceOptions();
     });
 
@@ -458,6 +476,7 @@ function setupEventListeners() {
             desc: descInput.value.trim(),
             projectId: projectInput.value,
             invoiceId: invoiceInput.value,
+            requestor: document.getElementById('task-requestor').value,
             start: startTime.toISOString(),
             end: endTime.toISOString(),
             durationMs: endTime.getTime() - startTime.getTime()
@@ -467,6 +486,7 @@ function setupEventListeners() {
         
         // Reset form
         descInput.value = '';
+        document.getElementById('task-requestor').value = '';
         setDefaultTimes();
         
         saveState();
@@ -630,8 +650,9 @@ function setupEventListeners() {
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                             <thead>
                                 <tr style="border-bottom: 2px solid var(--border-color); text-align: left; color: var(--text-secondary);">
-                                    <th style="padding: 12px 8px; width: 20%;">Date</th>
-                                    <th style="padding: 12px 8px; width: 65%;">Description</th>
+                                    <th style="padding: 12px 8px; width: 15%;">Date</th>
+                                    <th style="padding: 12px 8px; width: 55%;">Description</th>
+                                    <th style="padding: 12px 8px; width: 15%;">Requestor</th>
                                     <th style="padding: 12px 8px; width: 15%; text-align: right;">Duration</th>
                                 </tr>
                             </thead>
@@ -640,6 +661,7 @@ function setupEventListeners() {
                                     <tr style="border-bottom: 1px solid #f1f5f9;">
                                         <td style="padding: 12px 8px; color: var(--text-secondary);">${new Date(t.start).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                                         <td style="padding: 12px 8px; font-weight: 500;">${t.desc}</td>
+                                        <td style="padding: 12px 8px; color: var(--text-secondary); font-size: 0.85rem;">${t.requestor || '-'}</td>
                                         <td style="padding: 12px 8px; text-align: right; font-weight: 600;">${formatDuration(t.durationMs)}</td>
                                     </tr>
                                 `).join('')}
@@ -824,7 +846,6 @@ function renderAll() {
     renderCustomerList();
     renderProjectOptions();
     renderInvoiceOptions();
-    renderProjectList();
     renderProjectManagementList();
     renderInvoiceList();
     renderTaskList();
@@ -891,6 +912,26 @@ function renderProjectOptions() {
 
 function renderInvoiceOptions() {
     renderInvoiceOptionsForSelect('task-invoice', 'task-project');
+}
+
+function renderRequestorOptions(projectSelectId, requestorSelectId) {
+    const projectSelect = document.getElementById(projectSelectId);
+    const requestorSelect = document.getElementById(requestorSelectId);
+    const projectId = projectSelect.value;
+    const project = state.projects.find(p => p.id === projectId);
+    
+    let html = '<option value="" selected>Select a Requestor</option>';
+    if (project) {
+        const customer = state.customers.find(c => c.id === project.customerId);
+        if (customer && customer.requestors && customer.requestors.length > 0) {
+            html = customer.requestors.map(r => `<option value="${r}">${r}</option>`).join('');
+            // Add a "blank" option at the top if there are requestors
+            html = '<option value="">None / Other</option>' + html;
+        } else {
+            html = '<option value="">No requestors defined</option>';
+        }
+    }
+    requestorSelect.innerHTML = html;
 }
 
 function renderInvoiceOptionsForSelect(invoiceSelectId, projectSelectId) {
@@ -996,37 +1037,6 @@ function renderDashboardActiveInvoices() {
     list.innerHTML = activeInvoices.map(getInvoiceItemHtml).join('');
 }
 
-function renderProjectList() {
-    const list = document.getElementById('project-list');
-    
-    if (state.projects.length === 0) {
-        list.innerHTML = '<p class="empty-state">No projects added yet.</p>';
-        return;
-    }
-
-    // Calculate totals per project
-    const totals = {};
-    state.projects.forEach(p => totals[p.id] = 0);
-    
-    state.tasks.forEach(t => {
-        if (totals[t.projectId] !== undefined) {
-            totals[t.projectId] += t.durationMs;
-        }
-    });
-
-    list.innerHTML = state.projects.map(p => {
-        const customer = state.customers.find(c => c.id === p.customerId);
-        return `
-            <div class="project-item">
-                <div style="display: flex; flex-direction: column;">
-                    <span class="project-name">${p.name}</span>
-                    <span style="font-size: 0.75rem; color: var(--text-secondary);">${customer ? customer.name : 'Unknown'}</span>
-                </div>
-                <span class="project-time">${formatDuration(totals[p.id])}</span>
-            </div>
-        `;
-    }).join('');
-}
 
 function renderProjectManagementList() {
     const list = document.getElementById('project-management-list');
@@ -1082,6 +1092,7 @@ function renderTaskList() {
                     <span class="task-desc">${t.desc}</span>
                     <span class="task-meta">
                         ${projectHtml}
+                        ${t.requestor ? `<span class="task-requestor-badge">${t.requestor}</span>` : ''}
                         ${invoiceHtml}
                         ${dateStr} at ${timeStr}
                     </span>
@@ -1133,6 +1144,7 @@ function renderManageTaskList() {
                     </div>
                     <div style="font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: 8px; align-items: center;">
                         <span class="task-project-badge" style="margin-right: 0;">${project ? project.name : 'Unknown Project'}</span>
+                        ${t.requestor ? `<span class="task-requestor-badge" style="margin-right: 0;">${t.requestor}</span>` : ''}
                         <span>•</span>
                         <span>${dateStr}</span>
                     </div>
@@ -1170,6 +1182,10 @@ window.openEditTaskModal = function(taskId) {
     // Populate invoices
     renderInvoiceOptionsForSelect('edit-task-invoice', 'edit-task-project');
     document.getElementById('edit-task-invoice').value = task.invoiceId;
+
+    // Populate requestors
+    renderRequestorOptions('edit-task-project', 'edit-task-requestor');
+    document.getElementById('edit-task-requestor').value = task.requestor || '';
 
     document.getElementById('edit-task-modal').classList.remove('hidden');
 };
