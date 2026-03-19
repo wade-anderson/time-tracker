@@ -461,8 +461,8 @@ function setupEventListeners() {
         const startTime = new Date(startInput.value);
         const endTime = new Date(endInput.value);
 
-        if (endTime <= startTime) {
-            alert("End time must be after start time.");
+        if (endTime < startTime) {
+            alert("End time must be after or equal to start time.");
             return;
         }
 
@@ -490,6 +490,52 @@ function setupEventListeners() {
         setDefaultTimes();
         
         saveState();
+        renderAll();
+    });
+
+    document.getElementById('log-in-progress-task').addEventListener('click', () => {
+        const descInput = document.getElementById('task-desc');
+        const projectInput = document.getElementById('task-project');
+        const invoiceInput = document.getElementById('task-invoice');
+
+        if (!descInput.value.trim()) {
+            alert("Please provide a description for the task.");
+            descInput.focus();
+            return;
+        }
+        if (!projectInput.value) {
+            alert("Please select a project.");
+            projectInput.focus();
+            return;
+        }
+        if (!invoiceInput.value) {
+            alert("An active invoice is required to log a task.");
+            invoiceInput.focus();
+            return;
+        }
+
+        const now = new Date();
+
+        const task = {
+            id: Date.now().toString(),
+            desc: descInput.value.trim(),
+            projectId: projectInput.value,
+            invoiceId: invoiceInput.value,
+            requestor: document.getElementById('task-requestor').value,
+            start: now.toISOString(),
+            end: now.toISOString(),
+            durationMs: 0
+        };
+
+        state.tasks.unshift(task); // Add to beginning
+        
+        // Reset form
+        descInput.value = '';
+        document.getElementById('task-requestor').value = '';
+        setDefaultTimes();
+        
+        saveState();
+        renderAll();
     });
 
     document.getElementById('view-report').addEventListener('click', () => {
@@ -848,6 +894,7 @@ function renderAll() {
     renderInvoiceOptions();
     renderProjectManagementList();
     renderInvoiceList();
+    renderInProgressTask();
     renderTaskList();
     renderSummaries();
     renderDashboardActiveInvoices();
@@ -1037,6 +1084,59 @@ function renderDashboardActiveInvoices() {
     list.innerHTML = activeInvoices.map(getInvoiceItemHtml).join('');
 }
 
+window.completeInProgressTask = function(taskId) {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (task) {
+        const now = new Date();
+        task.end = now.toISOString();
+        task.durationMs = now.getTime() - new Date(task.start).getTime();
+        saveState();
+        renderAll();
+    }
+};
+
+function renderInProgressTask() {
+    const section = document.getElementById('in-progress-task-section');
+    const container = document.getElementById('in-progress-task-container');
+    if (!section || !container) return;
+
+    // Find first in-progress task (start === end)
+    const inProgressTask = state.tasks.find(t => t.start === t.end);
+
+    if (!inProgressTask) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+
+    const project = state.projects.find(p => p.id === inProgressTask.projectId);
+    const startD = new Date(inProgressTask.start);
+    const timeStr = startD.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+    const elapsedMs = new Date().getTime() - startD.getTime();
+    
+    container.innerHTML = `
+        <div class="task-item" style="padding: 16px; border-left: 4px solid var(--primary-color);">
+            <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="font-weight: 600; font-size: 0.95rem;">${inProgressTask.desc}</span>
+                    <span style="font-weight: 700; color: var(--primary-color);">${formatDuration(elapsedMs)} elapsed</span>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: 8px; align-items: center;">
+                    <span class="task-project-badge" style="margin-right: 0;">${project ? project.name : 'Unknown Project'}</span>
+                    <span>•</span>
+                    <span>Started at ${timeStr}</span>
+                </div>
+            </div>
+            <div class="task-actions" style="margin-left: 16px; display: flex; gap: 8px; align-items: center;">
+                <button onclick="window.completeInProgressTask('${inProgressTask.id}')" class="btn btn-primary">Complete Task</button>
+                <button onclick="deleteTask('${inProgressTask.id}')" class="btn-delete" style="font-size: 1.5rem;" title="Delete Task">&times;</button>
+            </div>
+        </div>
+    `;
+}
+
 
 function renderProjectManagementList() {
     const list = document.getElementById('project-management-list');
@@ -1070,12 +1170,15 @@ function renderProjectManagementList() {
 function renderTaskList() {
     const list = document.getElementById('task-list');
     
-    if (state.tasks.length === 0) {
-        list.innerHTML = '<p class="empty-state">No tasks logged yet.</p>';
+    // Filter out in-progress tasks from the recent list
+    const completedTasks = state.tasks.filter(t => t.start !== t.end);
+
+    if (completedTasks.length === 0) {
+        list.innerHTML = '<p class="empty-state">No completed tasks logged yet.</p>';
         return;
     }
 
-    list.innerHTML = state.tasks.slice(0, 10).map(t => {
+    list.innerHTML = completedTasks.slice(0, 10).map(t => {
         const startD = new Date(t.start);
         const dateStr = startD.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
         const timeStr = startD.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
@@ -1110,7 +1213,7 @@ function deleteTask(id) {
     if (confirm('Are you sure you want to delete this task?')) {
         state.tasks = state.tasks.filter(t => t.id !== id);
         saveState();
-        renderManageTaskList(); // Always try to refresh management list
+        renderAll();
     }
 }
 
@@ -1118,9 +1221,9 @@ function renderManageTaskList() {
     const list = document.getElementById('manage-tasks-list');
     if (!list) return;
 
-    // Filter tasks that are in ACTIVE invoices
+    // Filter tasks that are in ACTIVE invoices and are completed
     const activeInvoiceIds = state.invoices.filter(i => i.status === 'active').map(i => i.id);
-    const activeTasks = state.tasks.filter(t => activeInvoiceIds.includes(t.invoiceId));
+    const activeTasks = state.tasks.filter(t => activeInvoiceIds.includes(t.invoiceId) && t.start !== t.end);
 
     if (activeTasks.length === 0) {
         list.innerHTML = '<p class="empty-state">No tasks found in active invoices.</p>';
@@ -1206,4 +1309,14 @@ function renderSummaries() {
 }
 
 // Start
+// Timer to update in-progress tasks periodically
+if (!window.inProgressTimer) {
+    window.inProgressTimer = setInterval(() => {
+        if (state.tasks.some(t => t.start === t.end)) {
+            renderInProgressTask();
+            renderSummaries(); // Also update summaries if duration is relevant, though typically we wait till completion
+        }
+    }, 60000);
+}
+
 init();

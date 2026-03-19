@@ -117,8 +117,19 @@
                             <input type="datetime-local" id="task-end" required>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary">Log Time</button>
+                    <div style="display: flex; gap: 12px; align-items: center; margin-top: 16px;">
+                        <button type="submit" class="btn btn-primary">Log Time</button>
+                        <button type="button" id="log-in-progress-task" class="btn btn-secondary">Create In Progress Task</button>
+                    </div>
                 </form>
+            </section>
+
+            <!-- In Progress Task Dashboard -->
+            <section class="card" id="in-progress-task-section" style="display: none;">
+                <h2>In Progress Task</h2>
+                <div id="in-progress-task-container">
+                    <!-- In progress task will be injected here -->
+                </div>
             </section>
 
             <!-- Active Invoices Dashboard -->

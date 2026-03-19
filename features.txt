@@ -1,0 +1,10 @@
+
+In Progress Task feature.
+Add the concept of an in progress task which is initiated by creating a task with the same start and end time.  
+Add a card called In Progress Task above the Active Invoices card that shows the in progress task including an elapsed time based on the start time and the current time.  
+Include a Complete Task button for the in progress task which will set the end time to now for the in progress task and mark it complete.  
+If a task is created with a end time that is different than the start time, it is a complete task.
+
+Add a Create In Progress task button to the Log Task card.  When clicked it will create a task with the current time as both the start and end time.
+
+Add a Delete capability to the In Progress Task card.  When clicked it will delete the in progress task.
