@@ -527,7 +527,7 @@ function setupEventListeners() {
                             
                             <div class="report-header" style="margin-bottom: 32px;">
                                 ${invoice && invoice.startDate && invoice.submissionDate ? `
-                                    <p style="color: #64748b; margin-top: -16px; margin-bottom: 24px; font-size: 0.85rem; text-align: center;">
+                                    <p style="color: #64748b; margin-bottom: 24px; font-size: 0.85rem; text-align: center;">
                                         Period: ${new Date(invoice.startDate + 'T00:00:00').toLocaleDateString()} to ${new Date(invoice.submissionDate + 'T00:00:00').toLocaleDateString()}
                                     </p>
                                 ` : ''}
