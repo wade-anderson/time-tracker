@@ -63,6 +63,7 @@ window.openEditProjectModal = function(id) {
     
     document.getElementById('edit-project-id').value = project.id;
     document.getElementById('edit-project-name').value = project.name;
+    document.getElementById('edit-project-completed').checked = project.status === 'completed';
     
     // Populate customer select in edit modal
     const customerSelect = document.getElementById('edit-project-customer');
@@ -129,6 +130,13 @@ function loadState() {
                         subDate.setDate(subDate.getDate() - 12);
                         i.startDate = subDate.toISOString().split('T')[0];
                     }
+                });
+            }
+
+            // Ensure all projects have a status
+            if (parsed.projects) {
+                parsed.projects.forEach(p => {
+                    if (!p.status) p.status = 'active';
                 });
             }
 
@@ -320,10 +328,12 @@ function setupEventListeners() {
         const id = document.getElementById('edit-project-id').value;
         const name = document.getElementById('edit-project-name').value.trim();
         const customerId = document.getElementById('edit-project-customer').value;
+        const isCompleted = document.getElementById('edit-project-completed').checked;
         const project = state.projects.find(p => p.id === id);
         if (project && name && customerId) {
             project.name = name;
             project.customerId = customerId;
+            project.status = isCompleted ? 'completed' : 'active';
             saveState();
             window.closeEditProjectModal();
         }
@@ -341,7 +351,8 @@ function setupEventListeners() {
             state.projects.push({
                 id: Date.now().toString(),
                 name: name,
-                customerId: customerInput.value
+                customerId: customerInput.value,
+                status: 'active'
             });
             nameInput.value = '';
             saveState();
@@ -857,7 +868,9 @@ function renderProjectOptions() {
     const currentTaskProject = taskProjectSelect.value;
     
     const optionsHtml = '<option value="" disabled selected>Select a Project</option>' + 
-        state.projects.map(p => {
+        state.projects
+            .filter(p => p.status !== 'completed')
+            .map(p => {
             const customer = state.customers.find(c => c.id === p.customerId);
             const label = customer ? `${customer.name} - ${p.name}` : p.name;
             return `<option value="${p.id}">${label}</option>`;
@@ -1018,7 +1031,10 @@ function renderProjectManagementList() {
         return `
             <div class="project-item">
                 <div style="display: flex; flex-direction: column;">
-                    <span class="project-name">${p.name}</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="project-name">${p.name}</span>
+                        <span class="status-badge status-${p.status || 'active'}">${p.status || 'active'}</span>
+                    </div>
                     <span style="font-size: 0.75rem; color: var(--text-secondary);">${customer ? customer.name : 'Unknown Customer'}</span>
                 </div>
                 <div class="task-actions">

@@ -538,6 +538,7 @@ input:focus, select:focus, textarea:focus {
 .status-active { background-color: #dcfce7; color: #166534; }
 .status-submitted { background-color: #dbeafe; color: #1e40af; }
 .status-paid { background-color: #f1f5f9; color: #475569; }
+.status-completed { background-color: #f1f5f9; color: #475569; }
 
 .btn-action {
     background-color: var(--primary-color);
