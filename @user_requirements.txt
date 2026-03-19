@@ -4,7 +4,7 @@
 2. **Data Entities**: Allow users to manage and add Customers, Projects, and Invoices.
 3. **Basic Task Logging**: Allow users to log tasks including a description, selected project, selected invoice, start time, and end time.
 4. **Time Summaries**: Provide summaries of total time spent per project, per day, and per week.
-5. **Report Generation**: Ensure all printed reports are accurate, professional, and legible. Printed reports must feature page numbering at the top right, prevent content truncation across page bounds, avoid breaking project data across pages, and hide UI buttons (like the print button) during printing.
+5. **Report Generation**: Ensure all printed reports are accurate, professional, and legible. Printed reports must explicitly feature page numbering (e.g., "Page 1") at the top right, but these numbers must remain completely invisible on the screen versions of the reports. The system must also prevent content truncation across page bounds, avoid breaking project data across pages, and hide UI buttons (like the print button) during printing.
 6. **Invoice Details**: Display total monetary amounts directly on invoice cards.
 7. **Project Statuses**: Projects are automatically marked as Active when created. Users can edit a project to mark it as Completed. When logging a new task, only Active projects can be selected.
 8. **Task Editing Improvements**: When editing an existing task from the Manage Tasks screen, allow the user to change both the Project and the Invoice associated with the task.

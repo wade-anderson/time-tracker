@@ -8,3 +8,5 @@ If a task is created with a end time that is different than the start time, it i
 Add a Create In Progress task button to the Log Task card.  When clicked it will create a task with the current time as both the start and end time.
 
 Add a Delete capability to the In Progress Task card.  When clicked it will delete the in progress task.
+
+Add page numbers to the printed reports, but not on the screen versions of the reports.

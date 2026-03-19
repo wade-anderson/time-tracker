@@ -585,14 +585,16 @@ input:focus, select:focus, textarea:focus {
     transform: translateY(-1px);
 }
 
-#print-page-num {
-    display: none;
-}
-
 /* Print Styles - Simplified for maximum reliability */
 @media print {
     @page {
         margin: 1.5cm;
+        @top-right {
+            content: "Page " counter(page);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 10px;
+            color: #64748b;
+        }
     }
     
     html, body {
