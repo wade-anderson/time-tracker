@@ -504,7 +504,7 @@ function setupEventListeners() {
 
         let html = `
             <div style="font-family: Inter, sans-serif; color: #0f172a;">
-                            <p style="color: #64748b; margin-bottom: 24px; font-size: 0.9rem;">Report Generated on ${now.toLocaleString()}</p>
+                            ${isBilling ? `<p style="color: #64748b; margin-bottom: 24px; font-size: 0.9rem;">Invoice for ${state.consultant.name || ''}</p>` : ''}
                             
                             <div class="report-header" style="margin-bottom: 32px;">
                                 ${invoice && invoice.startDate && invoice.submissionDate ? `
