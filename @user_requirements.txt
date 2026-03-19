@@ -1,0 +1,19 @@
+# TimeTracker App - User Requirements
+
+1. **Core Application**: Build a simple, clean, minimal, and mobile-friendly time tracking web application.
+2. **Data Entities**: Allow users to manage and add Customers, Projects, and Invoices.
+3. **Basic Task Logging**: Allow users to log tasks including a description, selected project, selected invoice, start time, and end time.
+4. **Time Summaries**: Provide summaries of total time spent per project, per day, and per week.
+5. **Report Generation**: Ensure all printed reports are accurate, professional, and legible. Printed reports must feature page numbering at the top right, prevent content truncation across page bounds, avoid breaking project data across pages, and hide UI buttons (like the print button) during printing.
+6. **Invoice Details**: Display total monetary amounts directly on invoice cards.
+7. **Project Statuses**: Projects are automatically marked as Active when created. Users can edit a project to mark it as Completed. When logging a new task, only Active projects can be selected.
+8. **Task Editing Improvements**: When editing an existing task from the Manage Tasks screen, allow the user to change both the Project and the Invoice associated with the task.
+9. **Customer Requestors**: Customers must have a list of "Requestors." These requestors appear as a selectable dropdown list when logging a task for that customer's projects.
+10. **Requestor Visibility**: Display the selected Requestor for each task on both the Manage Tasks view and the Recent Tasks list.
+11. **Dashboard Simplification**: The main dashboard should be clean; the "Project Totals" card should be removed, and the "View Report" button should be placed conveniently within the main sidebar.
+12. **In Progress Tasks**:
+    12.1. **Initiation**: An "in-progress" task is initiated if a task is logged where the start time and end time are identical. If a task spans any duration (end time != start time), it is immediately treated as a completed task.
+    12.2. **Quick Start Button**: Provide a "Create In Progress Task" button on the Log Task card that instantly creates an in-progress task using the current time for both start and end.
+    12.3. **Dashboard Card**: Display an "In Progress Task" card (above the Active Invoices card) that surfaces the active task alongside a live elapsed-time timer based on the start time and current time.
+    12.4. **Completion**: Provide a "Complete Task" button on the In Progress card that sets the end time to the current moment, calculates the final duration, and marks it as complete.
+    12.5. **Deletion**: Provide a Delete capability (an '×' button) on the In Progress card to instantly discard and delete the in-progress task.
