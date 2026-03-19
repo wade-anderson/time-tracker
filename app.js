@@ -236,6 +236,10 @@ function setupEventListeners() {
     document.getElementById('close-manage-tasks').addEventListener('click', window.closeManageTasksModal);
     document.getElementById('close-edit-task').addEventListener('click', window.closeEditTaskModal);
     document.getElementById('cancel-edit-task').addEventListener('click', window.closeEditTaskModal);
+
+    document.getElementById('edit-task-project').addEventListener('change', () => {
+        renderInvoiceOptionsForSelect('edit-task-invoice', 'edit-task-project');
+    });
     
     document.getElementById('close-edit-project').addEventListener('click', window.closeEditProjectModal);
     document.getElementById('cancel-edit-project').addEventListener('click', window.closeEditProjectModal);
@@ -309,12 +313,16 @@ function setupEventListeners() {
         const desc = document.getElementById('edit-task-desc').value.trim();
         const start = document.getElementById('edit-task-start').value;
         const end = document.getElementById('edit-task-end').value;
+        const projectId = document.getElementById('edit-task-project').value;
+        const invoiceId = document.getElementById('edit-task-invoice').value;
 
         const task = state.tasks.find(t => t.id === id);
-        if (task && desc && start && end) {
+        if (task && desc && start && end && projectId && invoiceId) {
             task.desc = desc;
             task.start = start;
             task.end = end;
+            task.projectId = projectId;
+            task.invoiceId = invoiceId;
             task.durationMs = new Date(end) - new Date(start);
             saveState();
             alert('Task updated!');
@@ -882,8 +890,12 @@ function renderProjectOptions() {
 }
 
 function renderInvoiceOptions() {
-    const select = document.getElementById('task-invoice');
-    const projectId = document.getElementById('task-project').value;
+    renderInvoiceOptionsForSelect('task-invoice', 'task-project');
+}
+
+function renderInvoiceOptionsForSelect(invoiceSelectId, projectSelectId) {
+    const select = document.getElementById(invoiceSelectId);
+    const projectId = document.getElementById(projectSelectId).value;
     const project = state.projects.find(p => p.id === projectId);
     const currentValue = select.value;
 
@@ -911,8 +923,7 @@ function renderInvoiceOptions() {
 
     select.innerHTML = html;
     
-    // Auto-select logic: if we have a "best" invoice and 
-    // either no value is selected OR the current selection is no longer valid
+    // Auto-select logic
     const isCurrentValid = currentValue && state.invoices.find(i => i.id === currentValue && (project && i.customerId === project.customerId));
     
     if (autoSelectId && !isCurrentValid) {
@@ -1143,6 +1154,22 @@ window.openEditTaskModal = function(taskId) {
     document.getElementById('edit-task-desc').value = task.desc;
     document.getElementById('edit-task-start').value = task.start;
     document.getElementById('edit-task-end').value = task.end;
+
+    // Populate projects
+    const projectSelect = document.getElementById('edit-task-project');
+    projectSelect.innerHTML = '<option value="" disabled>Select a Project</option>' + 
+        state.projects
+            .filter(p => p.status !== 'completed' || p.id === task.projectId) // Show active OR current even if completed
+            .map(p => {
+                const customer = state.customers.find(c => c.id === p.customerId);
+                const label = customer ? `${customer.name} - ${p.name}` : p.name;
+                return `<option value="${p.id}">${label}</option>`;
+            }).join('');
+    projectSelect.value = task.projectId;
+
+    // Populate invoices
+    renderInvoiceOptionsForSelect('edit-task-invoice', 'edit-task-project');
+    document.getElementById('edit-task-invoice').value = task.invoiceId;
 
     document.getElementById('edit-task-modal').classList.remove('hidden');
 };
