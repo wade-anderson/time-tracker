@@ -17,3 +17,4 @@
     12.3. **Dashboard Card**: Display an "In Progress Task" card (above the Active Invoices card) that surfaces the active task alongside a live elapsed-time timer based on the start time and current time.
     12.4. **Completion**: Provide a "Complete Task" button on the In Progress card that sets the end time to the current moment, calculates the final duration, and marks it as complete.
     12.5. **Deletion**: Provide a Delete capability (an '×' button) on the In Progress card to instantly discard and delete the in-progress task.
+13. **User Interface Accessibility**: When a popup/modal window is active, pressing the ESC key must cancel and close it.

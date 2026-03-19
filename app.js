@@ -239,6 +239,12 @@ function setupEventListeners() {
     document.getElementById('close-edit-task').addEventListener('click', window.closeEditTaskModal);
     document.getElementById('cancel-edit-task').addEventListener('click', window.closeEditTaskModal);
 
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+        }
+    });
+
     document.getElementById('edit-task-project').addEventListener('change', () => {
         renderRequestorOptions('edit-task-project', 'edit-task-requestor');
         renderInvoiceOptionsForSelect('edit-task-invoice', 'edit-task-project');
