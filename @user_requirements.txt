@@ -18,3 +18,4 @@
     12.4. **Completion**: Provide a "Complete Task" button on the In Progress card that sets the end time to the current moment, calculates the final duration, and marks it as complete.
     12.5. **Deletion**: Provide a Delete capability (an '×' button) on the In Progress card to instantly discard and delete the in-progress task.
 13. **User Interface Accessibility**: When a popup/modal window is active, pressing the ESC key must cancel and close it.
+14. **Data Storage Mechanism**: Application state must be persisted asynchronously using IndexedDB to support larger datasets, ensuring automatic migration for any legacy data residing in localStorage.

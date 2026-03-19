@@ -8,9 +8,62 @@ let state = {
     invoices: []   // { id, name, customerId, submissionDate }
 };
 
+// --- IndexedDB Configuration ---
+const DB_NAME = 'TimeTrackerDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'app_state';
+let db;
+
+function initDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+        request.onsuccess = (e) => {
+            db = e.target.result;
+            resolve();
+        };
+        request.onerror = (e) => {
+            console.error("IndexedDB error:", e.target.error);
+            reject(e.target.error);
+        };
+    });
+}
+
+function getFromDB(key) {
+    return new Promise((resolve, reject) => {
+        if (!db) return resolve(null);
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+function saveToDB(key, data) {
+    return new Promise((resolve, reject) => {
+        if (!db) return resolve();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.put(data, key);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+    });
+}
+
 // Initialization
-function init() {
-    loadState();
+async function init() {
+    try {
+        await initDB();
+    } catch (e) {
+        console.error("Failed to init DB", e);
+    }
+    await loadState();
     setDefaultTimes();
     renderAll();
     setupEventListeners();
@@ -75,11 +128,27 @@ window.openEditProjectModal = function(id) {
     document.getElementById('edit-project-modal').classList.remove('hidden');
 };
 
-function loadState() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
+async function loadState() {
+    let rawState = null;
+    let fromLegacy = false;
+
+    try {
+        rawState = await getFromDB(STORAGE_KEY);
+    } catch (e) {
+        console.error('Error loading from DB', e);
+    }
+
+    if (!rawState) {
+        const legacySaved = localStorage.getItem(STORAGE_KEY);
+        if (legacySaved) {
+            rawState = JSON.parse(legacySaved);
+            fromLegacy = true;
+        }
+    }
+
+    if (rawState) {
         try {
-            const parsed = JSON.parse(saved);
+            const parsed = rawState;
             
             // Ensure all customers have an hourlyRate, address, and requestors
             if (parsed.customers) {
@@ -143,6 +212,11 @@ function loadState() {
             }
 
             state = parsed;
+            
+            if (fromLegacy) {
+                saveToDB(STORAGE_KEY, state).catch(console.error);
+                console.log("Migrated data from localStorage to IndexedDB");
+            }
         } catch (e) {
             console.error("Failed to parse state", e);
         }
@@ -150,8 +224,8 @@ function loadState() {
 }
 
 function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    renderAll();
+    const p = saveToDB(STORAGE_KEY, state).then(() => renderAll()).catch(console.error);
+    return p;
 }
 
 // Event Listeners setup
