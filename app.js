@@ -1155,7 +1155,17 @@ function renderInvoiceList() {
         return;
     }
 
-    container.innerHTML = state.invoices.map(getInvoiceItemHtml).join('');
+    const sortedInvoices = [...state.invoices].sort((a, b) => {
+        if (a.status === 'active' && b.status !== 'active') return -1;
+        if (a.status !== 'active' && b.status === 'active') return 1;
+        
+        const dateCmp = b.submissionDate.localeCompare(a.submissionDate);
+        if (dateCmp !== 0) return dateCmp;
+        
+        return b.id.localeCompare(a.id);
+    });
+
+    container.innerHTML = sortedInvoices.map(getInvoiceItemHtml).join('');
 }
 
 function renderDashboardActiveInvoices() {
