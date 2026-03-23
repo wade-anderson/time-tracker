@@ -413,16 +413,18 @@ function setupEventListeners() {
         const task = state.tasks.find(t => t.id === id);
         if (task && desc && start && end && projectId && invoiceId) {
             task.desc = desc;
-            task.start = start;
-            task.end = end;
+            task.start = new Date(start).toISOString();
+            task.end = new Date(end).toISOString();
             task.projectId = projectId;
             task.invoiceId = invoiceId;
             task.requestor = requestor;
-            task.durationMs = new Date(end) - new Date(start);
+            task.durationMs = new Date(task.end) - new Date(task.start);
             saveState();
-            alert('Task updated!');
+            if (task.durationMs > 0) {
+                alert('Task updated!');
+            }
             window.closeEditTaskModal();
-            renderManageTaskList(); // Refresh the list
+            renderAll(); // Refresh the list
         }
     });
 
@@ -1237,6 +1239,7 @@ function renderInProgressTask() {
                 </div>
             </div>
             <div class="task-actions" style="margin-left: 16px; display: flex; gap: 8px; align-items: center;">
+                <button onclick="window.openEditTaskModal('${inProgressTask.id}')" class="btn-action-outline">Edit</button>
                 <button onclick="window.completeInProgressTask('${inProgressTask.id}')" class="btn btn-primary">Complete Task</button>
                 <button onclick="deleteTask('${inProgressTask.id}')" class="btn-delete" style="font-size: 1.5rem;" title="Delete Task">&times;</button>
             </div>
@@ -1366,8 +1369,28 @@ window.openEditTaskModal = function(taskId) {
 
     document.getElementById('edit-task-id').value = task.id;
     document.getElementById('edit-task-desc').value = task.desc;
-    document.getElementById('edit-task-start').value = task.start;
-    document.getElementById('edit-task-end').value = task.end;
+    
+    // Format to YYYY-MM-DDThh:mm for datetime-local
+    const formatToLocalHTML5 = (dateStr) => {
+        const d = new Date(dateStr);
+        if (isNaN(d)) return dateStr;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${mins}`;
+    };
+
+    const startInput = document.getElementById('edit-task-start');
+    const endInput = document.getElementById('edit-task-end');
+    
+    startInput.value = formatToLocalHTML5(task.start);
+    endInput.value = formatToLocalHTML5(task.end);
+    
+    const isInProgress = task.start === task.end;
+    startInput.disabled = isInProgress;
+    endInput.disabled = isInProgress;
 
     // Populate projects
     const projectSelect = document.getElementById('edit-task-project');
