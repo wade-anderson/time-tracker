@@ -22,3 +22,6 @@
 15. **Data Deletion Safeguards**: The system must explicitly ask for user confirmation before executing the deletion of any task, invoice, customer, or project to prevent accidental data loss.
 16. **Automatic Backups**: The system must automatically generate and download a comprehensive JSON backup of all application data immediately after a user successfully logs a new task or initiates an in-progress task.
 17. **Invoice Sorting**: The list of invoices must be sorted so that active invoices appear at the top, followed by the remaining invoices sorted by their submission date (most recent first).
+18. **Version Display**: Display the application version number (e.g., "v1.0.0") on the top right of the main page header.
+19. **XSS Protection**: Ensure DOM text is not reinterpreted as HTML by escaping meta-characters in all user inputs before rendering them onto the page.
+20. **In Progress Task Editing**: Allow editing of in-progress tasks directly from the dashboard. When editing an in-progress task, the start and end time inputs must be disabled to prevent accidental timer modifications, and the "Task updated!" popup should be suppressed upon saving.
