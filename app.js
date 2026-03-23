@@ -641,7 +641,7 @@ function setupEventListeners() {
             : state.tasks;
 
         const reportTitle = invoice 
-            ? (isBilling ? `Billing Summary: ${invoice.name}` : `Task Detail Report: ${invoice.name}`)
+            ? (isBilling ? `Billing Summary: ${escapeHTML(invoice.name)}` : `Task Detail Report: ${escapeHTML(invoice.name)}`)
             : "Summary Dashboard";
             
         const totalDuration = filteredTasks.reduce((sum, t) => sum + t.durationMs, 0);
@@ -1227,11 +1227,11 @@ function renderInProgressTask() {
         <div class="task-item" style="padding: 16px; border-left: 4px solid var(--primary-color);">
             <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="font-weight: 600; font-size: 0.95rem;">${inProgressTask.desc}</span>
+                    <span style="font-weight: 600; font-size: 0.95rem;">${escapeHTML(inProgressTask.desc)}</span>
                     <span style="font-weight: 700; color: var(--primary-color);">${formatDuration(elapsedMs)} elapsed</span>
                 </div>
                 <div style="font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: 8px; align-items: center;">
-                    <span class="task-project-badge" style="margin-right: 0;">${project ? project.name : 'Unknown Project'}</span>
+                    <span class="task-project-badge" style="margin-right: 0;">${project ? escapeHTML(project.name) : 'Unknown Project'}</span>
                     <span>•</span>
                     <span>Started at ${timeStr}</span>
                 </div>
@@ -1260,10 +1260,10 @@ function renderProjectManagementList() {
             <div class="project-item">
                 <div style="display: flex; flex-direction: column;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="project-name">${p.name}</span>
+                        <span class="project-name">${escapeHTML(p.name)}</span>
                         <span class="status-badge status-${p.status || 'active'}">${p.status || 'active'}</span>
                     </div>
-                    <span style="font-size: 0.75rem; color: var(--text-secondary);">${customer ? customer.name : 'Unknown Customer'}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">${customer ? escapeHTML(customer.name) : 'Unknown Customer'}</span>
                 </div>
                 <div class="task-actions">
                     <button onclick="openEditProjectModal('${p.id}')" class="btn-action-outline">Edit</button>
@@ -1291,18 +1291,18 @@ function renderTaskList() {
         const timeStr = startD.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
         
         const project = state.projects.find(p => p.id === t.projectId);
-        const projectHtml = project ? `<span class="task-project-badge">${project.name}</span>` : '<span class="task-project-badge">Deleted Project</span>';
+        const projectHtml = project ? `<span class="task-project-badge">${escapeHTML(project.name)}</span>` : '<span class="task-project-badge">Deleted Project</span>';
         
         const invoice = t.invoiceId ? state.invoices.find(i => i.id === t.invoiceId) : null;
-        const invoiceHtml = invoice ? `<span class="task-invoice-badge">${invoice.name}</span>` : '';
+        const invoiceHtml = invoice ? `<span class="task-invoice-badge">${escapeHTML(invoice.name)}</span>` : '';
 
         return `
             <div class="task-item">
                 <div class="task-details">
-                    <span class="task-desc">${t.desc}</span>
+                    <span class="task-desc">${escapeHTML(t.desc)}</span>
                     <span class="task-meta">
                         ${projectHtml}
-                        ${t.requestor ? `<span class="task-requestor-badge">${t.requestor}</span>` : ''}
+                        ${t.requestor ? `<span class="task-requestor-badge">${escapeHTML(t.requestor)}</span>` : ''}
                         ${invoiceHtml}
                         ${dateStr} at ${timeStr}
                     </span>
@@ -1341,12 +1341,12 @@ function renderManageTaskList() {
             <div class="task-item" style="padding: 16px; border-bottom: 1px solid var(--border-color);">
                 <div style="flex: 1;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                        <span style="font-weight: 600; font-size: 0.95rem;">${t.desc}</span>
+                        <span style="font-weight: 600; font-size: 0.95rem;">${escapeHTML(t.desc)}</span>
                         <span style="font-weight: 700; color: var(--primary-color);">${formatDuration(t.durationMs)}</span>
                     </div>
                     <div style="font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: 8px; align-items: center;">
-                        <span class="task-project-badge" style="margin-right: 0;">${project ? project.name : 'Unknown Project'}</span>
-                        ${t.requestor ? `<span class="task-requestor-badge" style="margin-right: 0;">${t.requestor}</span>` : ''}
+                        <span class="task-project-badge" style="margin-right: 0;">${project ? escapeHTML(project.name) : 'Unknown Project'}</span>
+                        ${t.requestor ? `<span class="task-requestor-badge" style="margin-right: 0;">${escapeHTML(t.requestor)}</span>` : ''}
                         <span>•</span>
                         <span>${dateStr}</span>
                     </div>
@@ -1376,7 +1376,7 @@ window.openEditTaskModal = function(taskId) {
             .filter(p => p.status !== 'completed' || p.id === task.projectId) // Show active OR current even if completed
             .map(p => {
                 const customer = state.customers.find(c => c.id === p.customerId);
-                const label = customer ? `${customer.name} - ${p.name}` : p.name;
+                const label = customer ? `${escapeHTML(customer.name)} - ${escapeHTML(p.name)}` : escapeHTML(p.name);
                 return `<option value="${p.id}">${label}</option>`;
             }).join('');
     projectSelect.value = task.projectId;
