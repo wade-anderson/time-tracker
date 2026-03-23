@@ -915,6 +915,13 @@ window.payInvoice = function(id) {
 };
 
 // Helpers
+function escapeHTML(str) {
+    if (!str && str !== 0) return '';
+    return String(str).replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    }[tag]));
+}
+
 function setDefaultTimes() {
     const now = new Date();
     // Use local time for setting datetime-local input
@@ -997,7 +1004,7 @@ function renderCustomerOptions() {
     const curInvoiceCust = invoiceCustSelect.value;
 
     const options = '<option value="" disabled selected>Select a Customer</option>' + 
-        state.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        state.customers.map(c => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
 
     projectCustSelect.innerHTML = options;
     invoiceCustSelect.innerHTML = options;
@@ -1018,7 +1025,7 @@ function renderCustomerList() {
     container.innerHTML = state.customers.map(c => `
         <div class="invoice-item-compact">
             <div class="invoice-info">
-                <strong>${c.name}</strong>
+                <strong>${escapeHTML(c.name)}</strong>
                 <span style="font-size: 0.75rem; color: var(--text-secondary);">${formatCurrency(c.hourlyRate || 0)}/hr</span>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
@@ -1038,7 +1045,7 @@ function renderProjectOptions() {
             .filter(p => p.status !== 'completed')
             .map(p => {
             const customer = state.customers.find(c => c.id === p.customerId);
-            const label = customer ? `${customer.name} - ${p.name}` : p.name;
+            const label = customer ? `${escapeHTML(customer.name)} - ${escapeHTML(p.name)}` : escapeHTML(p.name);
             return `<option value="${p.id}">${label}</option>`;
         }).join('');
     
@@ -1061,7 +1068,7 @@ function renderRequestorOptions(projectSelectId, requestorSelectId) {
     if (project) {
         const customer = state.customers.find(c => c.id === project.customerId);
         if (customer && customer.requestors && customer.requestors.length > 0) {
-            html = customer.requestors.map(r => `<option value="${r}">${r}</option>`).join('');
+            html = customer.requestors.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join('');
             // Add a "blank" option at the top if there are requestors
             html = '<option value="">None / Other</option>' + html;
         } else {
@@ -1095,7 +1102,7 @@ function renderInvoiceOptionsForSelect(invoiceSelectId, projectSelectId) {
             const nextDue = customerInvoices.find(i => i.submissionDate >= today) || customerInvoices[0];
             
             if (nextDue) autoSelectId = nextDue.id;
-            html = customerInvoices.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+            html = customerInvoices.map(i => `<option value="${i.id}">${escapeHTML(i.name)}</option>`).join('');
         }
     }
 
@@ -1131,11 +1138,11 @@ function getInvoiceItemHtml(i) {
         <div class="invoice-item-compact">
             <div class="invoice-info">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <strong>${i.name}</strong>
+                    <strong>${escapeHTML(i.name)}</strong>
                     ${statusBadge}
                     <span style="font-weight: 700; color: #059669; margin-left: auto; font-size: 0.95rem;">${formatCurrency(totalAmount, 0)}</span>
                 </div>
-                <div class="invoice-meta">${customer ? customer.name : 'Unknown'} &bull; Period: ${i.startDate} to ${i.submissionDate}</div>
+                <div class="invoice-meta">${customer ? escapeHTML(customer.name) : 'Unknown'} &bull; Period: ${i.startDate} to ${i.submissionDate}</div>
             </div>
             <div class="invoice-actions" style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
                 <button class="btn-action-outline" onclick="showReport('${i.id}', 'tasks')" title="View Task Details (No Rates)">Tasks</button>
