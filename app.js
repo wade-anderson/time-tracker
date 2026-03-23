@@ -652,9 +652,9 @@ function setupEventListeners() {
             fromHtml = `
                 <div style="flex: 1;">
                     <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; margin-bottom: 4px;">From</div>
-                    <div style="font-weight: 700; font-size: 1rem;">${state.consultant.name}</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary); white-space: pre-line;">${state.consultant.address}</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">${state.consultant.email} ${state.consultant.phone ? '| ' + state.consultant.phone : ''}</div>
+                    <div style="font-weight: 700; font-size: 1rem;">${escapeHTML(state.consultant.name)}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); white-space: pre-line;">${escapeHTML(state.consultant.address)}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">${escapeHTML(state.consultant.email)} ${state.consultant.phone ? '| ' + escapeHTML(state.consultant.phone) : ''}</div>
                 </div>
             `;
         }
@@ -666,8 +666,8 @@ function setupEventListeners() {
                 toHtml = `
                     <div style="flex: 1; text-align: right;">
                         <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; margin-bottom: 4px;">To</div>
-                        <div style="font-weight: 700; font-size: 1rem;">${customer.name}</div>
-                        <div style="font-size: 0.85rem; color: var(--text-secondary); white-space: pre-line;">${customer.address}</div>
+                        <div style="font-weight: 700; font-size: 1rem;">${escapeHTML(customer.name)}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); white-space: pre-line;">${escapeHTML(customer.address)}</div>
                     </div>
                 `;
             }
@@ -675,7 +675,7 @@ function setupEventListeners() {
 
         let html = `
             <div style="font-family: Inter, sans-serif; color: #0f172a;">
-                            ${isBilling ? `<p style="color: #64748b; margin-bottom: 24px; font-size: 0.9rem;">Invoice for ${state.consultant.name || ''}</p>` : ''}
+                            ${isBilling ? `<p style="color: #64748b; margin-bottom: 24px; font-size: 0.9rem;">Invoice for ${escapeHTML(state.consultant.name || '')}</p>` : ''}
                             
                             <div class="report-header" style="margin-bottom: 32px;">
                                 ${invoice && invoice.startDate && invoice.submissionDate ? `
@@ -748,7 +748,7 @@ function setupEventListeners() {
 
                 html += `
                     <tr style="border-bottom: 1px solid #f1f5f9;">
-                        <td style="padding: 12px 8px; font-weight: 600;">${p.name}</td>
+                        <td style="padding: 12px 8px; font-weight: 600;">${escapeHTML(p.name)}</td>
                         <td style="padding: 12px 8px;">${formatDuration(projectTotalMs)}</td>
                         <td style="padding: 12px 8px; text-align: right;">${formatCurrency(rate)}/hr</td>
                         <td style="padding: 12px 8px; text-align: right; font-weight: 700;">${formatCurrency(roundedAmount, 0)}</td>
@@ -776,7 +776,7 @@ function setupEventListeners() {
                 html += `
                     <div class="report-project-block" style="margin-bottom: 32px;">
                         <div style="background-color: #f8fafc; padding: 8px 12px; border-left: 4px solid var(--primary-color); font-weight: 700; font-size: 1rem; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; border-radius: 0 4px 4px 0; margin-bottom: 8px;">
-                            <span>Project: ${p.name}</span>
+                            <span>Project: ${escapeHTML(p.name)}</span>
                             <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">Total: ${formatDuration(projectDurationMs)}</span>
                         </div>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
@@ -792,8 +792,8 @@ function setupEventListeners() {
                                 ${projectTasks.map(t => `
                                     <tr style="border-bottom: 1px solid #f1f5f9;">
                                         <td style="padding: 12px 8px; color: var(--text-secondary);">${new Date(t.start).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                                        <td style="padding: 12px 8px; font-weight: 500;">${t.desc}</td>
-                                        <td style="padding: 12px 8px; color: var(--text-secondary); font-size: 0.85rem;">${t.requestor || '-'}</td>
+                                        <td style="padding: 12px 8px; font-weight: 500;">${escapeHTML(t.desc)}</td>
+                                        <td style="padding: 12px 8px; color: var(--text-secondary); font-size: 0.85rem;">${escapeHTML(t.requestor) || '-'}</td>
                                         <td style="padding: 12px 8px; text-align: right; font-weight: 600;">${formatDuration(t.durationMs)}</td>
                                     </tr>
                                 `).join('')}
