@@ -114,6 +114,14 @@ window.deleteProject = function(id) {
     saveState();
 };
 
+window.toggleProjectStatus = function(id) {
+    const project = state.projects.find(p => p.id === id);
+    if (project) {
+        project.status = project.status === 'completed' ? 'active' : 'completed';
+        saveState();
+    }
+};
+
 window.openEditProjectModal = function(id) {
     const project = state.projects.find(p => p.id === id);
     if (!project) return;
@@ -916,6 +924,27 @@ window.payInvoice = function(id) {
     }
 };
 
+
+// Sorting helpers
+function sortProjects(projects) {
+    return [...projects].sort((a, b) => {
+        // 1. Status: active comes before completed
+        const statusA = a.status || 'active';
+        const statusB = b.status || 'active';
+        if (statusA === 'active' && statusB === 'completed') return -1;
+        if (statusA === 'completed' && statusB === 'active') return 1;
+
+        // 2. Customer Name
+        const custA = state.customers.find(c => c.id === a.customerId)?.name || '';
+        const custB = state.customers.find(c => c.id === b.customerId)?.name || '';
+        const custCmp = custA.localeCompare(custB, undefined, { sensitivity: 'base' });
+        if (custCmp !== 0) return custCmp;
+
+        // 3. Project Name
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    });
+}
+
 // Helpers
 function escapeHTML(str) {
     if (!str && str !== 0) return '';
@@ -1043,7 +1072,7 @@ function renderProjectOptions() {
     const currentTaskProject = taskProjectSelect.value;
     
     const optionsHtml = '<option value="" disabled selected>Select a Project</option>' + 
-        state.projects
+        sortProjects(state.projects)
             .filter(p => p.status !== 'completed')
             .map(p => {
             const customer = state.customers.find(c => c.id === p.customerId);
@@ -1257,8 +1286,11 @@ function renderProjectManagementList() {
         return;
     }
 
-    list.innerHTML = state.projects.map(p => {
+    list.innerHTML = sortProjects(state.projects).map(p => {
         const customer = state.customers.find(c => c.id === p.customerId);
+        const isCompleted = p.status === 'completed';
+        const toggleBtnText = isCompleted ? 'Mark Active' : 'Mark Completed';
+        
         return `
             <div class="project-item">
                 <div style="display: flex; flex-direction: column;">
@@ -1269,6 +1301,7 @@ function renderProjectManagementList() {
                     <span style="font-size: 0.75rem; color: var(--text-secondary);">${customer ? escapeHTML(customer.name) : 'Unknown Customer'}</span>
                 </div>
                 <div class="task-actions">
+                    <button onclick="toggleProjectStatus('${p.id}')" class="btn-action-outline">${toggleBtnText}</button>
                     <button onclick="openEditProjectModal('${p.id}')" class="btn-action-outline">Edit</button>
                     <button onclick="deleteProject('${p.id}')" class="btn-delete-small">&times;</button>
                 </div>
@@ -1395,7 +1428,7 @@ window.openEditTaskModal = function(taskId) {
     // Populate projects
     const projectSelect = document.getElementById('edit-task-project');
     projectSelect.innerHTML = '<option value="" disabled>Select a Project</option>' + 
-        state.projects
+        sortProjects(state.projects)
             .filter(p => p.status !== 'completed' || p.id === task.projectId) // Show active OR current even if completed
             .map(p => {
                 const customer = state.customers.find(c => c.id === p.customerId);

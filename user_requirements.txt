@@ -25,3 +25,6 @@
 18. **Version Display**: Display the application version number (e.g., "v1.0.0") on the top right of the main page header.
 19. **XSS Protection**: Ensure DOM text is not reinterpreted as HTML by escaping meta-characters in all user inputs before rendering them onto the page.
 20. **In Progress Task Editing**: Allow editing of in-progress tasks directly from the dashboard. When editing an in-progress task, the start and end time inputs must be disabled to prevent accidental timer modifications, and the "Task updated!" popup should be suppressed upon saving.
+21. Projects
+    21.1. **Project Statuses**: Projects are automatically marked as Active when created. Users can edit a project to mark it as Completed. When logging a new task, only Active projects can be selected.  Active Projects appear on the top of the list.  Completed Projects appear at the bottom of the list.  Completed Projects can be edited to change the status to Active.  Completed Projects can be deleted.  Active Projects can be deleted.
+    21.2. Put a button on the each project in the project list to toggle between Active and Completed status.
