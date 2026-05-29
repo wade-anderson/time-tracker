@@ -28,3 +28,14 @@
 21. Projects
     21.1. **Project Statuses**: Projects are automatically marked as Active when created. Users can edit a project to mark it as Completed. When logging a new task, only Active projects can be selected.  Active Projects appear on the top of the list.  Completed Projects appear at the bottom of the list.  Completed Projects can be edited to change the status to Active.  Completed Projects can be deleted.  Active Projects can be deleted.
     21.2. Put a button on the each project in the project list to toggle between Active and Completed status.
+22. **Consultant Profile**: Allow users to manage a Consultant Profile via a dedicated form (name, email, phone number, and address). This profile must be displayed as the "From" address block on printed invoice reports.
+23. **Invoice Status Lifecycle**: Invoices support a lifecycle of Active, Submitted, and Paid. Submitting an invoice locks the customer's current hourly rate on that invoice to prevent future rate modifications from altering historical calculations.
+24. **Report Variants**: Support two distinct report views for invoices:
+    24.1. **Task Detail Report**: A detailed breakdown showing date, description, requestor, and duration, omitting rates and amounts.
+    24.2. **Billing Summary**: A summary showing project totals, hours, hourly rates, and rounded amounts, ending with a total amount due.
+25. **Start/End Time Quick Selectors**: Provide shortcut buttons (e.g. a clock icon) in both the log task card and edit task modal to easily set start and end times to the current time.
+26. **Auto-Select Active Invoice**: When logging a task, selecting a project should automatically select the active invoice associated with that project's customer that is nearest to its due date.
+27. **Data Reset & Import**: In the data management dashboard, provide options to reset all application data to a clean state, and import application data from a valid JSON backup file.
+28. **Deletion Cascades & Unassignments**:
+    28.1. Deleting a customer unassigns their projects and invoices (sets customerId to null) instead of deleting them.
+    28.2. Deleting an invoice unassigns its associated tasks (sets invoiceId to null).
