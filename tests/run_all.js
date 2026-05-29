@@ -185,6 +185,198 @@ async function runTests() {
         assert.ok(newState.tasks.length < state1.tasks.length, "Task should be deleted");
     });
 
+    await test("Rounding and Standardized Invoice Totals", async () => {
+        let dbState = await getStoredState();
+        
+        // 1. Clear tasks and projects to have a clean state for this test
+        dbState.tasks = [];
+        dbState.projects = [];
+        dbState.invoices = [];
+        
+        // Create an invoice
+        const invoiceId = "inv-test-round";
+        dbState.invoices.push({
+            id: invoiceId,
+            customerId: dbState.customers[0].id,
+            name: "INV-ROUND-TEST",
+            startDate: "2026-05-01",
+            submissionDate: "2026-05-31",
+            status: "active"
+        });
+
+        // Create 2 projects under the same customer
+        const projA = { id: "proj-a", customerId: dbState.customers[0].id, name: "Project A", status: "active" };
+        const projB = { id: "proj-b", customerId: dbState.customers[0].id, name: "Project B", status: "active" };
+        dbState.projects.push(projA, projB);
+
+        // Save back
+        await new Promise((resolve, reject) => {
+            const req = global.indexedDB.open('TimeTrackerDB', 1);
+            req.onsuccess = (e) => {
+                const db = e.target.result;
+                const tx = db.transaction('app_state', 'readwrite');
+                const store = tx.objectStore('app_state');
+                const putReq = store.put(dbState, 'timeTrackerState');
+                putReq.onsuccess = () => resolve();
+                putReq.onerror = () => reject(putReq.error);
+            };
+        });
+
+        // Spin up a new window to fetch from DB
+        const testDom = new JSDOM(html, { runScripts: "dangerously", url: "http://localhost/" });
+        const testWindow = testDom.window;
+        const testDocument = testWindow.document;
+        testWindow.alert = () => {};
+        testWindow.confirm = () => true;
+        testWindow.URL.createObjectURL = () => "blob:http://localhost/mock-url";
+        testWindow.URL.revokeObjectURL = () => {};
+        testWindow.indexedDB = global.indexedDB;
+        testWindow.IDBKeyRange = global.IDBKeyRange;
+        
+        const scriptEl = testDocument.createElement('script');
+        scriptEl.textContent = script.replace(/indexedDB\.open/g, 'window.indexedDB.open');
+        testDocument.body.appendChild(scriptEl);
+        
+        await new Promise(resolve => setTimeout(resolve, 250));
+
+        // Helper to set values in the testDocument
+        const setTestVal = (id, val) => {
+            const el = testDocument.getElementById(id);
+            if(!el) throw new Error("Element not found: " + id);
+            el.value = val;
+            el.dispatchEvent(new testWindow.Event('change'));
+        };
+
+        // 2. Add an in-progress task and complete it after 6h 30m 30s.
+        // It should round up to 6h 31m.
+        testDocument.getElementById('toolbar-manage-projects').click(); // modal reset
+        setTestVal('task-desc', 'In Progress Test Task');
+        setTestVal('task-project', projA.id);
+        setTestVal('task-invoice', invoiceId);
+        
+        testDocument.getElementById('log-in-progress-task').click();
+        await new Promise(r => setTimeout(r, 100));
+        
+        let stateAfterStart = await getStoredState();
+        let inProgress = stateAfterStart.tasks.find(t => t.start === t.end);
+        assert.ok(inProgress, "In-progress task should be created");
+        
+        // Backdate the start time to exactly 6h 30m 30s ago
+        const duration = 6 * 3600000 + 30 * 60000 + 30 * 1000; // 6h 30m 30s
+        const fakeStart = new Date(Date.now() - duration);
+        inProgress.start = fakeStart.toISOString();
+        inProgress.end = fakeStart.toISOString();
+        
+        await new Promise((resolve, reject) => {
+            const req = global.indexedDB.open('TimeTrackerDB', 1);
+            req.onsuccess = (e) => {
+                const db = e.target.result;
+                const tx = db.transaction('app_state', 'readwrite');
+                const store = tx.objectStore('app_state');
+                const putReq = store.put(stateAfterStart, 'timeTrackerState');
+                putReq.onsuccess = () => resolve();
+                putReq.onerror = () => reject(putReq.error);
+            };
+        });
+        
+        // Spin up another fresh window with updated start time
+        const testDom2 = new JSDOM(html, { runScripts: "dangerously", url: "http://localhost/" });
+        const testWindow2 = testDom2.window;
+        const testDocument2 = testDom2.window.document;
+        testWindow2.alert = () => {};
+        testWindow2.confirm = () => true;
+        testWindow2.URL.createObjectURL = () => "blob:http://localhost/mock-url";
+        testWindow2.URL.revokeObjectURL = () => {};
+        testWindow2.indexedDB = global.indexedDB;
+        testWindow2.IDBKeyRange = global.IDBKeyRange;
+        
+        const scriptEl2 = testDocument2.createElement('script');
+        scriptEl2.textContent = script.replace(/indexedDB\.open/g, 'window.indexedDB.open');
+        testDocument2.body.appendChild(scriptEl2);
+        
+        await new Promise(resolve => setTimeout(resolve, 250));
+        
+        // Complete the task in testWindow2
+        testWindow2.completeInProgressTask(inProgress.id);
+        await new Promise(r => setTimeout(r, 100));
+        
+        let stateAfterComplete = await getStoredState();
+        let completedTask = stateAfterComplete.tasks.find(t => t.id === inProgress.id);
+        
+        // 6h 30m 30s should round up to 6h 31m = 391 minutes = 23,460,000 ms.
+        assert.strictEqual(completedTask.durationMs, 23460000);
+        
+        // End time should match start + durationMs exactly
+        const startMs = new Date(completedTask.start).getTime();
+        const endMs = new Date(completedTask.end).getTime();
+        assert.strictEqual(endMs - startMs, 23460000);
+
+        // 3. Test standardized invoice total calculation:
+        // Set up the following tasks:
+        // Customer hourlyRate: 150.
+        // Task A on proj-a: duration 1h 15m (4,500,000 ms). Amount: 1.25 * 150 = 187.50 -> rounds to 188.
+        // Task B on proj-b: duration 1h 15m (4,500,000 ms). Amount: 1.25 * 150 = 187.50 -> rounds to 188.
+        // Invoice total should be project-based sum of rounded amounts: 188 + 188 = 376.
+        
+        stateAfterComplete.tasks = [
+            {
+                id: "task-a",
+                desc: "Task on Project A",
+                projectId: projA.id,
+                invoiceId: invoiceId,
+                start: "2026-05-01T09:00:00.000Z",
+                end: "2026-05-01T10:15:00.000Z",
+                durationMs: 4500000 // 1h 15m
+            },
+            {
+                id: "task-b",
+                desc: "Task on Project B",
+                projectId: projB.id,
+                invoiceId: invoiceId,
+                start: "2026-05-02T09:00:00.000Z",
+                end: "2026-05-02T10:15:00.000Z",
+                durationMs: 4500000 // 1h 15m
+            }
+        ];
+        
+        await new Promise((resolve, reject) => {
+            const req = global.indexedDB.open('TimeTrackerDB', 1);
+            req.onsuccess = (e) => {
+                const db = e.target.result;
+                const tx = db.transaction('app_state', 'readwrite');
+                const store = tx.objectStore('app_state');
+                const putReq = store.put(stateAfterComplete, 'timeTrackerState');
+                putReq.onsuccess = () => resolve();
+                putReq.onerror = () => reject(putReq.error);
+            };
+        });
+        
+        // Spin up third window to view calculated total on invoice management card
+        const testDom3 = new JSDOM(html, { runScripts: "dangerously", url: "http://localhost/" });
+        const testWindow3 = testDom3.window;
+        const testDocument3 = testDom3.window.document;
+        testWindow3.alert = () => {};
+        testWindow3.confirm = () => true;
+        testWindow3.URL.createObjectURL = () => "blob:http://localhost/mock-url";
+        testWindow3.URL.revokeObjectURL = () => {};
+        testWindow3.indexedDB = global.indexedDB;
+        testWindow3.IDBKeyRange = global.IDBKeyRange;
+        
+        const scriptEl3 = testDocument3.createElement('script');
+        scriptEl3.textContent = script.replace(/indexedDB\.open/g, 'window.indexedDB.open');
+        testDocument3.body.appendChild(scriptEl3);
+        
+        await new Promise(resolve => setTimeout(resolve, 250));
+        
+        // Get the invoice item element content
+        const invoiceListContainer = testDocument3.getElementById('invoice-management-list');
+        const invoiceCardHtml = invoiceListContainer.innerHTML;
+        
+        // Assert invoice card displays $376 (the project-based sum of rounded amounts), NOT $375
+        assert.ok(invoiceCardHtml.includes('$376'), "Invoice card should show $376 (sum of rounded project amounts)");
+        assert.ok(!invoiceCardHtml.includes('$375'), "Invoice card should NOT show $375");
+    });
+
     console.log(`\nTests Completed: ${passed} Passed, ${failed} Failed`);
     process.exit(failed > 0 ? 1 : 0);
 }

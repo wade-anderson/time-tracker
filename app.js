@@ -422,11 +422,20 @@ function setupEventListeners() {
         if (task && desc && start && end && projectId && invoiceId) {
             task.desc = desc;
             task.start = new Date(start).toISOString();
-            task.end = new Date(end).toISOString();
             task.projectId = projectId;
             task.invoiceId = invoiceId;
             task.requestor = requestor;
-            task.durationMs = new Date(task.end) - new Date(task.start);
+            
+            if (start === end) {
+                task.end = task.start;
+                task.durationMs = 0;
+            } else {
+                const rawDurationMs = new Date(end) - new Date(start);
+                const roundedDurationMs = Math.max(60000, Math.round(rawDurationMs / 60000) * 60000);
+                task.durationMs = roundedDurationMs;
+                task.end = new Date(new Date(task.start).getTime() + roundedDurationMs).toISOString();
+            }
+            
             saveState();
             if (task.durationMs > 0) {
                 alert('Task updated!');
@@ -564,6 +573,17 @@ function setupEventListeners() {
             return;
         }
 
+        let endIso = endTime.toISOString();
+        let durationMs = endTime.getTime() - startTime.getTime();
+        
+        if (startInput.value !== endInput.value) {
+            durationMs = Math.max(60000, Math.round(durationMs / 60000) * 60000);
+            endIso = new Date(startTime.getTime() + durationMs).toISOString();
+        } else {
+            durationMs = 0;
+            endIso = startTime.toISOString();
+        }
+
         const task = {
             id: Date.now().toString(),
             desc: descInput.value.trim(),
@@ -571,8 +591,8 @@ function setupEventListeners() {
             invoiceId: invoiceInput.value,
             requestor: document.getElementById('task-requestor').value,
             start: startTime.toISOString(),
-            end: endTime.toISOString(),
-            durationMs: endTime.getTime() - startTime.getTime()
+            end: endIso,
+            durationMs: durationMs
         };
 
         state.tasks.unshift(task); // Add to beginning
@@ -874,6 +894,16 @@ function setupEventListeners() {
                 const importedData = JSON.parse(event.target.result);
                 // Basic validation
                 if (importedData.projects && Array.isArray(importedData.tasks)) {
+                    importedData.tasks.forEach(task => {
+                        if (task.start && task.end && task.start !== task.end) {
+                            const startTime = new Date(task.start);
+                            const endTime = new Date(task.end);
+                            const rawDurationMs = endTime.getTime() - startTime.getTime();
+                            const roundedDurationMs = Math.max(60000, Math.round(rawDurationMs / 60000) * 60000);
+                            task.durationMs = roundedDurationMs;
+                            task.end = new Date(startTime.getTime() + roundedDurationMs).toISOString();
+                        }
+                    });
                     state = importedData;
                     saveState();
                     alert('Data imported successfully!');
@@ -1149,6 +1179,29 @@ function renderInvoiceOptionsForSelect(invoiceSelectId, projectSelectId) {
     }
 }
 
+function calculateInvoiceAmount(invoice) {
+    if (!invoice) return 0;
+    const customer = state.customers.find(c => c.id === invoice.customerId);
+    const rate = (invoice.lockedRate !== undefined) ? invoice.lockedRate : (customer ? customer.hourlyRate : 0);
+    
+    const invoiceTasks = state.tasks.filter(t => t.invoiceId === invoice.id);
+    const projectTotals = {};
+    invoiceTasks.forEach(t => {
+        if (projectTotals[t.projectId] === undefined) {
+            projectTotals[t.projectId] = 0;
+        }
+        projectTotals[t.projectId] += t.durationMs;
+    });
+    
+    let totalAmount = 0;
+    Object.keys(projectTotals).forEach(projectId => {
+        const projectTotalMs = projectTotals[projectId];
+        const projectAmount = (projectTotalMs / 3600000) * rate;
+        totalAmount += Math.round(projectAmount);
+    });
+    return totalAmount;
+}
+
 function getInvoiceItemHtml(i) {
     const customer = state.customers.find(c => c.id === i.customerId);
     let actions = '';
@@ -1160,10 +1213,7 @@ function getInvoiceItemHtml(i) {
         actions = `<button class="btn-action" onclick="payInvoice('${i.id}')">Mark Paid</button>`;
     }
 
-    const invoiceTasks = state.tasks.filter(t => t.invoiceId === i.id);
-    const totalDurationMs = invoiceTasks.reduce((sum, t) => sum + t.durationMs, 0);
-    const rate = (i.lockedRate !== undefined) ? i.lockedRate : (customer ? customer.hourlyRate : 0);
-    const totalAmount = Math.round((totalDurationMs / 3600000) * rate);
+    const totalAmount = calculateInvoiceAmount(i);
 
     return `
         <div class="invoice-item-compact">
@@ -1226,8 +1276,10 @@ window.completeInProgressTask = function(taskId) {
     const task = state.tasks.find(t => t.id === taskId);
     if (task) {
         const now = new Date();
-        task.end = now.toISOString();
-        task.durationMs = now.getTime() - new Date(task.start).getTime();
+        const rawDurationMs = now.getTime() - new Date(task.start).getTime();
+        const roundedDurationMs = Math.max(60000, Math.round(rawDurationMs / 60000) * 60000);
+        task.durationMs = roundedDurationMs;
+        task.end = new Date(new Date(task.start).getTime() + roundedDurationMs).toISOString();
         saveState();
         renderAll();
     }

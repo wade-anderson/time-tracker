@@ -1,0 +1,635 @@
+{
+  "customers": [
+    {
+      "id": "1773843576611",
+      "name": "Beyond Air, Inc",
+      "hourlyRate": 100,
+      "address": "900 Stewart Ave\nSuite 301\nGarden City, NY 11530",
+      "requestors": [
+        "Chad",
+        "Stephen",
+        "Jose",
+        "QA",
+        "Todd"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "1773848321816",
+      "name": "General (PR's, etc)",
+      "customerId": "1773843576611",
+      "status": "active"
+    },
+    {
+      "id": "1773848327277",
+      "name": "General / Meetings",
+      "customerId": "1773843576611",
+      "status": "active"
+    },
+    {
+      "id": "1773848333264",
+      "name": "General / Emails",
+      "customerId": "1773843576611",
+      "status": "active"
+    },
+    {
+      "id": "1773848338775",
+      "name": "General / Misc",
+      "customerId": "1773843576611",
+      "status": "active"
+    },
+    {
+      "id": "1774285306642",
+      "name": "PHII - Long Term Improvement Plan",
+      "customerId": "1773843576611",
+      "status": "completed"
+    },
+    {
+      "id": "1775739108573",
+      "name": "AN-274 Add a \"service-due clear\" button to diagnostics screen",
+      "customerId": "1773843576611",
+      "status": "completed"
+    },
+    {
+      "id": "1775739151698",
+      "name": "AN-277 Service-to-UI serial comm. testing is impractical",
+      "customerId": "1773843576611",
+      "status": "completed"
+    },
+    {
+      "id": "1776948730554",
+      "name": "AN-282 Backup Delivery treats manual flow change as simultaneous dose change when in 2slpm+ backup flow range",
+      "customerId": "1773843576611",
+      "status": "completed"
+    },
+    {
+      "id": "1778179373280",
+      "name": "Boot up without SD card",
+      "customerId": "1773843576611",
+      "status": "completed"
+    },
+    {
+      "id": "1779883713636",
+      "name": "AN-276 Adjusting alarm volume results in the device continuously alarming (no indicator)",
+      "customerId": "1773843576611",
+      "status": "completed"
+    },
+    {
+      "id": "1780064272279",
+      "name": "AN-279 High/Low NO Alarms on Dose Change",
+      "customerId": "1773843576611",
+      "status": "active"
+    },
+    {
+      "id": "1780070099276",
+      "name": "AN-281 Low O2 alarm at startup",
+      "customerId": "1773843576611",
+      "status": "active"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "1780074977883",
+      "desc": "Email about the \"INSTALLING UI ASSETS...\" message.  I see the message for the entire time, not just a few seconds.",
+      "projectId": "1773848333264",
+      "invoiceId": "1779103753717",
+      "requestor": "Chad",
+      "start": "2026-05-29T17:00:00.000Z",
+      "end": "2026-05-29T17:15:00.000Z",
+      "durationMs": 900000
+    },
+    {
+      "id": "1780070115649",
+      "desc": "Investigate.  Need to hold off on O2 alarms until valid data comes from gas monitor.  Fixed.  Unit tested.  PR.",
+      "projectId": "1780070099276",
+      "invoiceId": "1779103753717",
+      "requestor": "Chad",
+      "start": "2026-05-29T15:55:00.000Z",
+      "end": "2026-05-29T17:07:00.000Z",
+      "durationMs": 4320000
+    },
+    {
+      "id": "1780064419603",
+      "desc": "Investigate.  Cannot recreate problem as described, testing shows this works as desired for low NO alarm.  This is not implemented for high NO alarm and I would hesitate to do that without clinical input.  Implementation seems to support what the issue is requesting.  Documented findings in Jira ticket and threw it back to Chad and Jordan for now.",
+      "projectId": "1780064272279",
+      "invoiceId": "1779103753717",
+      "requestor": "Chad",
+      "start": "2026-05-29T14:20:00.000Z",
+      "end": "2026-05-29T15:15:00.000Z",
+      "durationMs": 3300000
+    },
+    {
+      "id": "1780060593568",
+      "desc": "Now have a working IAR license.  Recreating issue on my device.  Fixed. Just need to stop sound when exiting settings.  Sound continues as expected if alarms are active.",
+      "projectId": "1779883713636",
+      "invoiceId": "1779103753717",
+      "requestor": "Chad",
+      "start": "2026-05-29T13:16:00.000Z",
+      "end": "2026-05-29T14:20:00.000Z",
+      "durationMs": 3840000
+    },
+    {
+      "id": "1779993204770",
+      "desc": "PR's for CSTAT artifact publishing fixes.",
+      "projectId": "1773848321816",
+      "invoiceId": "1779103753717",
+      "requestor": "Chad",
+      "start": "2026-05-28T18:15:00.000Z",
+      "end": "2026-05-28T18:30:00.000Z",
+      "durationMs": 900000
+    },
+    {
+      "id": "1779883164717",
+      "desc": "Investigate.  Need a working IAR license.",
+      "projectId": "1779883713636",
+      "invoiceId": "1779103753717",
+      "requestor": "Chad",
+      "start": "2026-05-27T11:59:00.000Z",
+      "end": "2026-05-27T12:48:00.000Z",
+      "durationMs": 2940000
+    },
+    {
+      "id": "1779372782126",
+      "desc": "IAR SD-P Blue Box questions from Rob.",
+      "projectId": "1773848333264",
+      "invoiceId": "1779103753717",
+      "requestor": "",
+      "start": "2026-05-21T14:00:00.000Z",
+      "end": "2026-05-21T14:15:00.000Z",
+      "durationMs": 900000
+    },
+    {
+      "id": "1779190050206",
+      "desc": "Pull requests for static analysis findings.",
+      "projectId": "1773848321816",
+      "invoiceId": "1779103753717",
+      "requestor": "Chad",
+      "start": "2026-05-18T11:15:00.000Z",
+      "end": "2026-05-18T11:30:00.000Z",
+      "durationMs": 900000
+    },
+    {
+      "id": "1779108042636",
+      "desc": "Static analysis updates. Review pull requests. Run analysis on NOGen, fix findings, pull request.",
+      "projectId": "1773848321816",
+      "invoiceId": "1779103753717",
+      "requestor": "Chad",
+      "start": "2026-05-18T11:30:00.000Z",
+      "end": "2026-05-18T13:00:00.000Z",
+      "durationMs": 5400000
+    },
+    {
+      "id": "1778250316074",
+      "desc": "Review PR for NOGen.",
+      "projectId": "1773848321816",
+      "invoiceId": "1777915150217",
+      "requestor": "Chad",
+      "start": "2026-05-08T14:15:00.000Z",
+      "end": "2026-05-08T14:30:00.000Z",
+      "durationMs": 900000
+    },
+    {
+      "id": "1778179401120",
+      "desc": "Implement.  This is AN-284 UI app appears dead if no response from Service app.",
+      "projectId": "1778179373280",
+      "invoiceId": "1777915150217",
+      "requestor": "Chad",
+      "start": "2026-05-07T18:43:00.000Z",
+      "end": "2026-05-07T19:42:00.000Z",
+      "durationMs": 3540000
+    },
+    {
+      "id": "1778159876599",
+      "desc": "Switch to temp IAR license.",
+      "projectId": "1773848333264",
+      "invoiceId": "1777915150217",
+      "requestor": "Chad",
+      "start": "2026-05-07T13:00:00.000Z",
+      "end": "2026-05-07T13:15:00.000Z",
+      "durationMs": 900000
+    },
+    {
+      "id": "1778013111575",
+      "desc": "Run some timing tests of how long messages appear when we can't communicate with the Service proc.",
+      "projectId": "1773848333264",
+      "invoiceId": "1777915150217",
+      "requestor": "Chad",
+      "start": "2026-05-05T20:31:00.000Z",
+      "end": "2026-05-05T20:53:00.000Z",
+      "durationMs": 1320000
+    },
+    {
+      "id": "1777992837975",
+      "desc": "Continue update IAR version.  Running into a license issue.",
+      "projectId": "1773848333264",
+      "invoiceId": "1777915150217",
+      "requestor": "Chad",
+      "start": "2026-05-05T14:53:00.000Z",
+      "end": "2026-05-05T15:21:00.000Z",
+      "durationMs": 1680000
+    },
+    {
+      "id": "1777991037942",
+      "desc": "Update IAR version.  Had to submit ticket to IT even though Chad already installed.",
+      "projectId": "1773848333264",
+      "invoiceId": "1777915150217",
+      "requestor": "Chad",
+      "start": "2026-05-05T14:23:00.000Z",
+      "end": "2026-05-05T14:43:00.000Z",
+      "durationMs": 1200000
+    },
+    {
+      "id": "1777981256917",
+      "desc": "Answer the \"boot-up without SD card email\".  Tried the changes to allow the UI to start without Service.  Required a tweak to timeouts.",
+      "projectId": "1773848333264",
+      "invoiceId": "1777915150217",
+      "requestor": "Chad",
+      "start": "2026-05-05T11:40:00.000Z",
+      "end": "2026-05-05T12:36:00.000Z",
+      "durationMs": 3360000
+    },
+    {
+      "id": "1777915543151",
+      "desc": "PRs for UI and NOGen.",
+      "projectId": "1773848321816",
+      "invoiceId": "1777915150217",
+      "requestor": "Chad",
+      "start": "2026-05-04T17:15:00.000Z",
+      "end": "2026-05-04T17:30:00.000Z",
+      "durationMs": 900000
+    },
+    {
+      "id": "1777382566350",
+      "desc": "Submit PR for backup flow.",
+      "projectId": "1776948730554",
+      "invoiceId": "1776774608746",
+      "requestor": "Chad",
+      "start": "2026-04-28T13:15:00.000Z",
+      "end": "2026-04-28T13:30:00.000Z",
+      "durationMs": 900000
+    },
+    {
+      "id": "1777376583106",
+      "desc": "Grab Rob's commit to fix backup flow build.  Add some comments to discussion in the Jira ticket.",
+      "projectId": "1776948730554",
+      "invoiceId": "1776774608746",
+      "requestor": "Chad",
+      "start": "2026-04-28T11:43:00.000Z",
+      "end": "2026-04-28T11:59:00.000Z",
+      "durationMs": 960000
+    },
+    {
+      "id": "1777288751124",
+      "desc": "Unit tests.  Setup PRs.  UI is ready.  Backup flow build is failing on DebugSbm, not related to my changes.  Backup flow waiting on go ahead from Chad's testing.",
+      "projectId": "1776948730554",
+      "invoiceId": "1776774608746",
+      "requestor": "Chad",
+      "start": "2026-04-27T11:19:00.000Z",
+      "end": "2026-04-27T12:06:00.000Z",
+      "durationMs": 2820000
+    },
+    {
+      "id": "1777032574525",
+      "desc": "Review yesterday's changes and the other cases where this code is used.",
+      "projectId": "1776948730554",
+      "invoiceId": "1776774608746",
+      "requestor": "Chad",
+      "start": "2026-04-24T12:09:00.000Z",
+      "end": "2026-04-24T13:31:00.000Z",
+      "durationMs": 4920000
+    },
+    {
+      "id": "1776961729471",
+      "desc": "Look into backup flow calculations.  Backup flow was not calculating nogen properly and was producing a new dose that got back to the UI.  Need to check other cases of backup flow to make sure changes to flow/dose are handled correctly.",
+      "projectId": "1776948730554",
+      "invoiceId": "1776774608746",
+      "requestor": "Chad",
+      "start": "2026-04-23T16:28:00.000Z",
+      "end": "2026-04-23T18:49:00.000Z",
+      "durationMs": 8460000
+    },
+    {
+      "id": "1776954129095",
+      "desc": "Backup Flow is setting PHGENII_BACKUP_FLOW_DEL_PARAM_NOSET.  Middleware is pulling this value in and using as NO set.  Middleware was not exiting edit mode when flow was confirmed, so updates to no set from backup would not show up until dose was confirmed or cancelled, or flow change was cancelled.  Fixed that.  Next thing is to figure out why backup is calculating no set incorrectly when qno is > 2000.",
+      "projectId": "1776948730554",
+      "invoiceId": "1776774608746",
+      "requestor": "Chad",
+      "start": "2026-04-23T14:22:00.000Z",
+      "end": "2026-04-23T15:53:00.000Z",
+      "durationMs": 5460000
+    },
+    {
+      "id": "1776948745045",
+      "desc": "Investigate.  Able to reproduce.  Suspect middleware is at fault.",
+      "projectId": "1776948730554",
+      "invoiceId": "1776774608746",
+      "requestor": "Chad",
+      "start": "2026-04-23T12:52:00.000Z",
+      "end": "2026-04-23T14:03:00.000Z",
+      "durationMs": 4260000
+    },
+    {
+      "id": "1776775262605",
+      "desc": "Training: Beyond Air QMSR - GMP & ISO Awareness Training Requirement.",
+      "projectId": "1773848338775",
+      "invoiceId": "1776774608746",
+      "requestor": "QA",
+      "start": "2026-04-21T12:30:00.000Z",
+      "end": "2026-04-21T12:45:00.000Z",
+      "durationMs": 900000
+    },
+    {
+      "id": "1776359503244",
+      "desc": "Try running at lower baud rate.  Works better running after startup at 1M baud rather than 4M baud.  Wrote email summary.  Don't think this option is viable.",
+      "projectId": "1775739151698",
+      "invoiceId": "1775137748067",
+      "requestor": "Chad",
+      "start": "2026-04-16T17:11:00.000Z",
+      "end": "2026-04-16T18:25:00.000Z",
+      "durationMs": 4440000
+    },
+    {
+      "id": "1776344593070",
+      "desc": "Continue to work on repeatability of the test.",
+      "projectId": "1775739151698",
+      "invoiceId": "1775137748067",
+      "requestor": "Chad",
+      "start": "2026-04-16T13:03:00.000Z",
+      "end": "2026-04-16T15:44:00.000Z",
+      "durationMs": 9660000
+    },
+    {
+      "id": "1776257414092",
+      "desc": "Continue to troubleshoot file transfer issues after startup.  Needed to create a thread to run the test in UI, console thread was not good enough.  May need to relax timeouts.  Can't repeat successful test without reset of UI.",
+      "projectId": "1775739151698",
+      "invoiceId": "1775137748067",
+      "requestor": "Chad",
+      "start": "2026-04-15T12:50:00.000Z",
+      "end": "2026-04-15T14:21:00.000Z",
+      "durationMs": 5460000
+    },
+    {
+      "id": "1776253669607",
+      "desc": "Continue to troubleshoot file transfer issues after startup.",
+      "projectId": "1775739151698",
+      "invoiceId": "1775137748067",
+      "requestor": "Chad",
+      "start": "2026-04-15T11:47:00.000Z",
+      "end": "2026-04-15T12:20:00.000Z",
+      "durationMs": 1980000
+    },
+    {
+      "id": "1776171046782",
+      "desc": "Continue troubleshooting.  Needed to increase stack for console thread.  Needed to disallow direct screen messages during test, conflicts with EW screen updates.  File transfer appears to have issues when running after startup, need to investigate further.",
+      "projectId": "1775739151698",
+      "invoiceId": "1775137748067",
+      "requestor": "Chad",
+      "start": "2026-04-14T12:50:00.000Z",
+      "end": "2026-04-14T14:54:00.000Z",
+      "durationMs": 7440000
+    },
+    {
+      "id": "1776083149778",
+      "desc": "Investigate.  Adding a test-service-serial serial console command.  Troubleshooting issues with starting YMODEM again after startup.",
+      "projectId": "1775739151698",
+      "invoiceId": "1775137748067",
+      "requestor": "Chad",
+      "start": "2026-04-13T12:25:00.000Z",
+      "end": "2026-04-13T14:15:00.000Z",
+      "durationMs": 6600000
+    },
+    {
+      "id": "1775826264547",
+      "desc": "PR review for gas monitor.",
+      "projectId": "1773848321816",
+      "invoiceId": "1775137748067",
+      "requestor": "Chad",
+      "start": "2026-04-10T12:50:00.000Z",
+      "end": "2026-04-10T13:05:00.000Z",
+      "durationMs": 900000
+    },
+    {
+      "id": "1775751200634",
+      "desc": "Continue with logging and test.",
+      "projectId": "1775739108573",
+      "invoiceId": "1775137748067",
+      "requestor": "Chad",
+      "start": "2026-04-09T16:13:20.634Z",
+      "end": "2026-04-09T17:05:20.634Z",
+      "durationMs": 3120000
+    },
+    {
+      "id": "1775739183589",
+      "desc": "Investigate.  Console command \"service-due clear\" exists, not logged.  Make button in service to call service due clear.  Add logging in both cases.  Add flag status to service screen.",
+      "projectId": "1775739108573",
+      "invoiceId": "1775137748067",
+      "requestor": "Chad",
+      "start": "2026-04-09T12:53:00.000Z",
+      "end": "2026-04-09T15:49:00.000Z",
+      "durationMs": 10560000
+    },
+    {
+      "id": "1775132667661",
+      "desc": "Create G2PRJ-5714 for UI and G2PRJ-5715 for General items.  Review UI.",
+      "projectId": "1774285306642",
+      "invoiceId": "1774025514342",
+      "requestor": "Chad",
+      "start": "2026-04-02T12:24:00.000Z",
+      "end": "2026-04-02T13:38:00.000Z",
+      "durationMs": 4440000
+    },
+    {
+      "id": "1775044664569",
+      "desc": "Create G2PRJ-5712 for Service.  Review Service.",
+      "projectId": "1774285306642",
+      "invoiceId": "1774025514342",
+      "requestor": "Chad",
+      "start": "2026-04-01T11:57:00.000Z",
+      "end": "2026-04-01T12:42:00.000Z",
+      "durationMs": 2700000
+    },
+    {
+      "id": "1774874572445",
+      "desc": "Created G2PRJ-5708 for RFID, review RFID.  Created G2PRJ-5710, review Backup Flow.",
+      "projectId": "1774285306642",
+      "invoiceId": "1774025514342",
+      "requestor": "Chad",
+      "start": "2026-03-30T12:42:00.000Z",
+      "end": "2026-03-30T14:28:00.000Z",
+      "durationMs": 6360000
+    },
+    {
+      "id": "1774615296064",
+      "desc": "PRs for common and gas monitor.",
+      "projectId": "1773848321816",
+      "invoiceId": "1774025514342",
+      "requestor": "Chad",
+      "start": "2026-03-27T12:15:00.000Z",
+      "end": "2026-03-27T12:45:00.000Z",
+      "durationMs": 1800000
+    },
+    {
+      "id": "1774530718754",
+      "desc": "Review Primary Flow.  Create G2PRJ-5706.",
+      "projectId": "1774285306642",
+      "invoiceId": "1774025514342",
+      "requestor": "Chad",
+      "start": "2026-03-26T13:11:00.000Z",
+      "end": "2026-03-26T14:01:00.000Z",
+      "durationMs": 3000000
+    },
+    {
+      "id": "1774524582726",
+      "desc": "Created G2PRJ-5704 Gas Monitor - general minor findings.  Reviewing Gas Monitor.",
+      "projectId": "1774285306642",
+      "invoiceId": "1774025514342",
+      "requestor": "Chad",
+      "start": "2026-03-26T11:29:00.000Z",
+      "end": "2026-03-26T12:35:00.000Z",
+      "durationMs": 3960000
+    },
+    {
+      "id": "1774442934212",
+      "desc": "Added some more observations in Common.  Created G2PRJ-5702 NOGeneration - general minor findings.  Reviewed NOGeneration, documented findings in Jira item.",
+      "projectId": "1774285306642",
+      "invoiceId": "1774025514342",
+      "requestor": "Chad",
+      "start": "2026-03-25T12:48:00.000Z",
+      "end": "2026-03-25T15:07:00.000Z",
+      "durationMs": 8340000
+    },
+    {
+      "id": "1774357070826",
+      "desc": "Scanned Common.  Created G2PRJ-5700 Common - general minor findings.",
+      "projectId": "1774285306642",
+      "invoiceId": "1774025514342",
+      "requestor": "Chad",
+      "start": "2026-03-24T12:57:00.000Z",
+      "end": "2026-03-24T15:12:00.000Z",
+      "durationMs": 8100000
+    },
+    {
+      "id": "1774285410255",
+      "desc": "Respond to initial email.",
+      "projectId": "1774285306642",
+      "invoiceId": "1774025514342",
+      "requestor": "Chad",
+      "start": "2026-03-23T12:45:00.000Z",
+      "end": "2026-03-23T13:00:00.000Z",
+      "durationMs": 900000
+    },
+    {
+      "id": "1774285329756",
+      "desc": "Wrote some suggested CANbus improvements under G2PRJ-5698:CAN System Architectural Improvements.",
+      "projectId": "1774285306642",
+      "invoiceId": "1774025514342",
+      "requestor": "Chad",
+      "start": "2026-03-23T17:02:00.000Z",
+      "end": "2026-03-23T18:40:00.000Z",
+      "durationMs": 5880000
+    },
+    {
+      "id": "1773849071276",
+      "desc": "PR review for GasMon and UI.",
+      "projectId": "1773848321816",
+      "invoiceId": "1773847681023",
+      "start": "2026-03-18T08:30",
+      "end": "2026-03-18T13:00:00.000Z",
+      "durationMs": 1800000,
+      "requestor": "Chad"
+    },
+    {
+      "id": "1773848955530",
+      "desc": "Annual Refresher Training Beyond Air’s Quality Management System",
+      "projectId": "1773848327277",
+      "invoiceId": "1773847681023",
+      "start": "2026-03-17T09:00",
+      "end": "2026-03-17T13:30:00.000Z",
+      "durationMs": 1800000,
+      "requestor": "QA"
+    },
+    {
+      "id": "1773848540719",
+      "desc": "Review and approve PR with changes for NOGen.",
+      "projectId": "1773848321816",
+      "invoiceId": "1773847681023",
+      "start": "2026-03-16T08:41",
+      "end": "2026-03-16T12:56:00.000Z",
+      "durationMs": 900000,
+      "requestor": "Chad"
+    },
+    {
+      "id": "1773848381984",
+      "desc": "IT Training",
+      "projectId": "1773848338775",
+      "invoiceId": "1773847681023",
+      "start": "2026-03-16T08:10",
+      "end": "2026-03-16T12:41:00.000Z",
+      "durationMs": 1860000,
+      "requestor": "Jose"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "1773847681023",
+      "name": "Beyond Air, Inc - 2026-03-20",
+      "customerId": "1773843576611",
+      "startDate": "2026-03-09",
+      "submissionDate": "2026-03-20",
+      "status": "paid",
+      "lockedRate": 100
+    },
+    {
+      "id": "1774025514342",
+      "name": "Beyond Air, Inc - 2026-04-03",
+      "customerId": "1773843576611",
+      "startDate": "2026-03-23",
+      "submissionDate": "2026-04-03",
+      "status": "paid",
+      "lockedRate": 100
+    },
+    {
+      "id": "1775137748067",
+      "name": "Beyond Air, Inc - 2026-04-17",
+      "customerId": "1773843576611",
+      "startDate": "2026-04-06",
+      "submissionDate": "2026-04-17",
+      "status": "paid",
+      "lockedRate": 100
+    },
+    {
+      "id": "1776774608746",
+      "name": "Beyond Air, Inc - 2026-05-01",
+      "customerId": "1773843576611",
+      "startDate": "2026-04-20",
+      "submissionDate": "2026-05-01",
+      "status": "paid",
+      "lockedRate": 100
+    },
+    {
+      "id": "1777915150217",
+      "name": "Beyond Air, Inc - 2026-05-15",
+      "customerId": "1773843576611",
+      "startDate": "2026-05-04",
+      "submissionDate": "2026-05-15",
+      "status": "submitted",
+      "lockedRate": 100
+    },
+    {
+      "id": "1779103753717",
+      "name": "Beyond Air, Inc - 2026-05-29",
+      "customerId": "1773843576611",
+      "startDate": "2026-05-18",
+      "submissionDate": "2026-05-29",
+      "status": "submitted",
+      "lockedRate": 100
+    }
+  ],
+  "consultant": {
+    "name": "Consulting Services by Wade Anderson",
+    "address": "Wade Anderson\n7 Blue Grotto Place\nPalm Coast, FL 32137",
+    "phone": "608-449-8451",
+    "email": "waa67_consult@pm.me"
+  }
+}
