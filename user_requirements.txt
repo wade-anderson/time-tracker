@@ -33,7 +33,7 @@
 24. **Report Variants**: Support two distinct report views for invoices:
     24.1. **Task Detail Report**: A detailed breakdown showing date, description, requestor, and duration, omitting rates and amounts.
     24.2. **Billing Summary**: A summary showing project totals, hours, hourly rates, and rounded amounts, ending with a total amount due.
-25. **Start/End Time Quick Selectors**: Provide shortcut buttons (e.g. a clock icon) in both the log task card and edit task modal to easily set start and end times to the current time.
+25. **Start/End Time Quick Selectors**: Provide shortcut buttons (e.g., a clock icon) in both the log task card and edit task modal to easily set start and end times to the current time. On the Log Task creation panel, clicking "Set to Now" for the start time automatically sets the end time to Now plus 15 minutes. Additionally, provide `+15m` and `+1h` buttons next to the End Time "Set to Now" button (on both the Log Task panel and Edit Task modal) to increment the end time by 15 minutes or 1 hour.
 26. **Auto-Select Active Invoice**: When logging a task, selecting a project should automatically select the active invoice associated with that project's customer that is nearest to its due date.
 27. **Data Reset & Import**: In the data management dashboard, provide options to reset all application data to a clean state, and import application data from a valid JSON backup file.
 28. **Deletion Cascades & Unassignments**:
