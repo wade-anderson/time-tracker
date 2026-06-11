@@ -377,6 +377,26 @@ async function runTests() {
         assert.ok(!invoiceCardHtml.includes('$375'), "Invoice card should NOT show $375");
     });
 
+    await test("Set to Now on start time sets end time to Now + 15 minutes", async () => {
+        const setStartNowBtn = document.getElementById('set-start-now');
+        assert.ok(setStartNowBtn, "Set to Now button for start time should exist");
+        
+        // Trigger click
+        setStartNowBtn.click();
+        
+        const startVal = document.getElementById('task-start').value;
+        const endVal = document.getElementById('task-end').value;
+        
+        assert.ok(startVal, "Start time should be set");
+        assert.ok(endVal, "End time should be set");
+        
+        const startDate = new Date(startVal);
+        const endDate = new Date(endVal);
+        
+        const diffMs = endDate.getTime() - startDate.getTime();
+        assert.strictEqual(diffMs, 15 * 60 * 1000, "End time should be exactly 15 minutes after start time");
+    });
+
     console.log(`\nTests Completed: ${passed} Passed, ${failed} Failed`);
     process.exit(failed > 0 ? 1 : 0);
 }

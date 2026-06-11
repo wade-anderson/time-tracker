@@ -387,20 +387,31 @@ function setupEventListeners() {
         }
     });
 
+    // Helper to format Date to YYYY-MM-DDThh:mm (local)
+    const formatLocalDateTime = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const mins = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${mins}`;
+    };
+
     // Helper for "Set to Now"
     const setTimeToNow = (inputId) => {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const mins = String(now.getMinutes()).padStart(2, '0');
-        document.getElementById(inputId).value = `${year}-${month}-${day}T${hours}:${mins}`;
+        document.getElementById(inputId).value = formatLocalDateTime(new Date());
     };
 
     const setStartNowBtn = document.getElementById('set-start-now');
     const setEndNowBtn = document.getElementById('set-end-now');
-    if (setStartNowBtn) setStartNowBtn.addEventListener('click', () => setTimeToNow('task-start'));
+    if (setStartNowBtn) {
+        setStartNowBtn.addEventListener('click', () => {
+            const now = new Date();
+            document.getElementById('task-start').value = formatLocalDateTime(now);
+            const fifteenMinsLater = new Date(now.getTime() + 15 * 60 * 1000);
+            document.getElementById('task-end').value = formatLocalDateTime(fifteenMinsLater);
+        });
+    }
     if (setEndNowBtn) setEndNowBtn.addEventListener('click', () => setTimeToNow('task-end'));
 
     const setEditStartNowBtn = document.getElementById('set-edit-start-now');
