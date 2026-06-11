@@ -113,7 +113,11 @@
                         <div class="input-group">
                             <label for="task-end" style="display: flex; justify-content: space-between; align-items: center;">
                                 End Time 
-                                <button type="button" id="set-end-now" class="btn-icon-tiny" title="Set to Now">🕒</button>
+                                <span style="display: flex; gap: 6px; align-items: center;">
+                                    <button type="button" id="set-end-now" class="btn-icon-tiny" title="Set to Now">🕒</button>
+                                    <button type="button" id="increment-end-15" class="btn-icon-tiny" title="Add 15 Minutes">+15m</button>
+                                    <button type="button" id="increment-end-1h" class="btn-icon-tiny" title="Add 1 Hour">+1h</button>
+                                </span>
                             </label>
                             <input type="datetime-local" id="task-end" required>
                         </div>
@@ -421,7 +425,11 @@
                         <div class="input-group">
                             <label for="edit-task-end" style="display: flex; justify-content: space-between; align-items: center;">
                                 End Time 
-                                <button type="button" id="set-edit-end-now" class="btn-icon-tiny" title="Set to Now">🕒</button>
+                                <span style="display: flex; gap: 6px; align-items: center;">
+                                    <button type="button" id="set-edit-end-now" class="btn-icon-tiny" title="Set to Now">🕒</button>
+                                    <button type="button" id="increment-edit-end-15" class="btn-icon-tiny" title="Add 15 Minutes">+15m</button>
+                                    <button type="button" id="increment-edit-end-1h" class="btn-icon-tiny" title="Add 1 Hour">+1h</button>
+                                </span>
                             </label>
                             <input type="datetime-local" id="edit-task-end" required>
                         </div>

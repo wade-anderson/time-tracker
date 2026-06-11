@@ -402,6 +402,21 @@ function setupEventListeners() {
         document.getElementById(inputId).value = formatLocalDateTime(new Date());
     };
 
+    // Helper to increment end time
+    const incrementEndTime = (inputId, minutes) => {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        let baseDate = new Date();
+        if (input.value) {
+            const parsed = new Date(input.value);
+            if (!isNaN(parsed.getTime())) {
+                baseDate = parsed;
+            }
+        }
+        const incremented = new Date(baseDate.getTime() + minutes * 60 * 1000);
+        input.value = formatLocalDateTime(incremented);
+    };
+
     const setStartNowBtn = document.getElementById('set-start-now');
     const setEndNowBtn = document.getElementById('set-end-now');
     if (setStartNowBtn) {
@@ -414,10 +429,20 @@ function setupEventListeners() {
     }
     if (setEndNowBtn) setEndNowBtn.addEventListener('click', () => setTimeToNow('task-end'));
 
+    const incrementEnd15Btn = document.getElementById('increment-end-15');
+    const incrementEnd1hBtn = document.getElementById('increment-end-1h');
+    if (incrementEnd15Btn) incrementEnd15Btn.addEventListener('click', () => incrementEndTime('task-end', 15));
+    if (incrementEnd1hBtn) incrementEnd1hBtn.addEventListener('click', () => incrementEndTime('task-end', 60));
+
     const setEditStartNowBtn = document.getElementById('set-edit-start-now');
     const setEditEndNowBtn = document.getElementById('set-edit-end-now');
     if (setEditStartNowBtn) setEditStartNowBtn.addEventListener('click', () => setTimeToNow('edit-task-start'));
     if (setEditEndNowBtn) setEditEndNowBtn.addEventListener('click', () => setTimeToNow('edit-task-end'));
+
+    const incrementEditEnd15Btn = document.getElementById('increment-edit-end-15');
+    const incrementEditEnd1hBtn = document.getElementById('increment-edit-end-1h');
+    if (incrementEditEnd15Btn) incrementEditEnd15Btn.addEventListener('click', () => incrementEndTime('edit-task-end', 15));
+    if (incrementEditEnd1hBtn) incrementEditEnd1hBtn.addEventListener('click', () => incrementEndTime('edit-task-end', 60));
 
     document.getElementById('edit-task-form').addEventListener('submit', (e) => {
         e.preventDefault();

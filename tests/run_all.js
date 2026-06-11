@@ -397,6 +397,41 @@ async function runTests() {
         assert.strictEqual(diffMs, 15 * 60 * 1000, "End time should be exactly 15 minutes after start time");
     });
 
+    await test("End time increment buttons (+15m and +1h) correctly modify the end time", async () => {
+        const incrementEnd15Btn = document.getElementById('increment-end-15');
+        const incrementEnd1hBtn = document.getElementById('increment-end-1h');
+        const taskEndInput = document.getElementById('task-end');
+        
+        assert.ok(incrementEnd15Btn, "+15m button should exist");
+        assert.ok(incrementEnd1hBtn, "+1h button should exist");
+        
+        const formatDateLocal = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const mins = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${mins}`;
+        };
+
+        // Test clicking when input is empty
+        taskEndInput.value = "";
+        const nowLocalStr = formatDateLocal(new Date());
+        incrementEnd15Btn.click();
+        
+        const val1 = new Date(taskEndInput.value).getTime();
+        const val2 = new Date(nowLocalStr).getTime();
+        const diff1 = val1 - val2;
+        // The difference should be roughly 15 minutes (allowing for small delay / minute rollover)
+        assert.ok(Math.abs(diff1 - 15 * 60 * 1000) <= 60000, "Should set end time to ~Now + 15m when clicked on empty input");
+        
+        // Test clicking when input has a value
+        const prevTime = new Date(taskEndInput.value).getTime();
+        incrementEnd1hBtn.click();
+        const newTime = new Date(taskEndInput.value).getTime();
+        assert.strictEqual(newTime - prevTime, 60 * 60 * 1000, "Should add exactly 1 hour to the existing end time");
+    });
+
     console.log(`\nTests Completed: ${passed} Passed, ${failed} Failed`);
     process.exit(failed > 0 ? 1 : 0);
 }
