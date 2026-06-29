@@ -755,7 +755,7 @@ function setupEventListeners() {
                                     ${toHtml}
                                 </div>
                                 <div style="display: flex; gap: 40px; border-top: 1px solid var(--border-color); padding-top: 16px;">
-                                    <div>
+                                    <div class="report-total-time">
                                         <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Total Time</div>
                                         <div style="font-size: 1.5rem; font-weight: 700;">${formatDuration(totalDuration)}</div>
                                     </div>
@@ -843,7 +843,7 @@ function setupEventListeners() {
                     <div class="report-project-block" style="margin-bottom: 32px;">
                         <div style="background-color: #f8fafc; padding: 8px 12px; border-left: 4px solid var(--primary-color); font-weight: 700; font-size: 1rem; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; border-radius: 0 4px 4px 0; margin-bottom: 8px;">
                             <span>Project: ${escapeHTML(p.name)}</span>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">Total: ${formatDuration(projectDurationMs)}</span>
+                            <span class="report-project-total" style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">Total: ${formatDuration(projectDurationMs)}</span>
                         </div>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                             <thead>
@@ -878,7 +878,15 @@ function setupEventListeners() {
             if (amountElement) amountElement.textContent = formatCurrency(reportTotalAmount, 0);
         }
         
-        document.getElementById('report-modal').classList.remove('hidden');
+        const reportModal = document.getElementById('report-modal');
+        if (isBilling) {
+            reportModal.classList.add('report-billing');
+            reportModal.classList.remove('report-tasks');
+        } else {
+            reportModal.classList.add('report-tasks');
+            reportModal.classList.remove('report-billing');
+        }
+        reportModal.classList.remove('hidden');
     };
 
     // Close modal handlers

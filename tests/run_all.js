@@ -432,6 +432,19 @@ async function runTests() {
         assert.strictEqual(newTime - prevTime, 60 * 60 * 1000, "Should add exactly 1 hour to the existing end time");
     });
 
+    await test("Report print styles: Billing report hides total time, Tasks report does not", async () => {
+        // Show report as billing
+        window.showReport('inv-123', 'billing');
+        const reportModal = document.getElementById('report-modal');
+        assert.ok(reportModal.classList.contains('report-billing'), "Billing report modal should have report-billing class");
+        assert.ok(!reportModal.classList.contains('report-tasks'), "Billing report modal should not have report-tasks class");
+
+        // Show report as tasks
+        window.showReport('inv-123', 'tasks');
+        assert.ok(reportModal.classList.contains('report-tasks'), "Tasks report modal should have report-tasks class");
+        assert.ok(!reportModal.classList.contains('report-billing'), "Tasks report modal should not have report-billing class");
+    });
+
     console.log(`\nTests Completed: ${passed} Passed, ${failed} Failed`);
     process.exit(failed > 0 ? 1 : 0);
 }

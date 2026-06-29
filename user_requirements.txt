@@ -31,8 +31,8 @@
 22. **Consultant Profile**: Allow users to manage a Consultant Profile via a dedicated form (name, email, phone number, and address). This profile must be displayed as the "From" address block on printed invoice reports.
 23. **Invoice Status Lifecycle**: Invoices support a lifecycle of Active, Submitted, and Paid. Submitting an invoice locks the customer's current hourly rate on that invoice to prevent future rate modifications from altering historical calculations.
 24. **Report Variants**: Support two distinct report views for invoices:
-    24.1. **Task Detail Report**: A detailed breakdown showing date, description, requestor, and duration, omitting rates and amounts.
-    24.2. **Billing Summary**: A summary showing project totals, hours, hourly rates, and rounded amounts, ending with a total amount due.
+    24.1. **Task Detail Report**: A detailed breakdown showing date, description, requestor, and duration, omitting rates and amounts. The total time spent is shown on both the screen and the printed output.
+    24.2. **Billing Summary**: A summary showing project totals, hours, hourly rates, and rounded amounts, ending with a total amount due. The overall total time spent is displayed on the screen but hidden on the printed report.
 25. **Start/End Time Quick Selectors**: Provide shortcut buttons (e.g., a clock icon) in both the log task card and edit task modal to easily set start and end times to the current time. On the Log Task creation panel, clicking "Set to Now" for the start time automatically sets the end time to Now plus 15 minutes. Additionally, provide `+15m` and `+1h` buttons next to the End Time "Set to Now" button (on both the Log Task panel and Edit Task modal) to increment the end time by 15 minutes or 1 hour.
 26. **Auto-Select Active Invoice**: When logging a task, selecting a project should automatically select the active invoice associated with that project's customer that is nearest to its due date.
 27. **Data Reset & Import**: In the data management dashboard, provide options to reset all application data to a clean state, and import application data from a valid JSON backup file.

@@ -656,7 +656,7 @@ input:focus, select:focus, textarea:focus {
     }
 
     /* Hide modal UI elements */
-    .modal-header h2, .btn-close, .modal-footer, #print-report {
+    .modal-header h2, .btn-close, .modal-footer, #print-report, .report-billing .report-total-time, .report-billing .report-project-total {
         display: none !important;
     }
 
