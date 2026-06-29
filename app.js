@@ -706,9 +706,9 @@ function setupEventListeners() {
             ? state.tasks.filter(t => t.invoiceId === invoiceId)
             : state.tasks;
 
-        const reportTitle = invoice 
-            ? (isBilling ? `Billing Summary: ${escapeHTML(invoice.name)}` : `Task Detail Report: ${escapeHTML(invoice.name)}`)
-            : "Summary Dashboard";
+        const reportTitle = isBilling ? "Billing Report" : "Task Report";
+        const titleEl = document.getElementById('report-title');
+        if (titleEl) titleEl.textContent = reportTitle;
             
         const totalDuration = filteredTasks.reduce((sum, t) => sum + t.durationMs, 0);
 
@@ -741,6 +741,7 @@ function setupEventListeners() {
 
         let html = `
             <div style="font-family: Inter, sans-serif; color: #0f172a;">
+                            <h2 class="print-only" style="display: none; font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">${reportTitle}</h2>
                             ${isBilling ? `<p style="color: #64748b; margin-bottom: 24px; font-size: 0.9rem;">Invoice for ${escapeHTML(state.consultant.name || '')}</p>` : ''}
                             
                             <div class="report-header" style="margin-bottom: 32px;">

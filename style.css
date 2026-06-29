@@ -697,6 +697,10 @@ input:focus, select:focus, textarea:focus {
         display: table-row-group;
     }
 
+    .print-only {
+        display: block !important;
+    }
+
     /* Ensure text colors are dark enough and no backgrounds hidden data */
     * {
         color: black !important;

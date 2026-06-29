@@ -436,13 +436,16 @@ async function runTests() {
         // Show report as billing
         window.showReport('inv-123', 'billing');
         const reportModal = document.getElementById('report-modal');
+        const reportTitleEl = document.getElementById('report-title');
         assert.ok(reportModal.classList.contains('report-billing'), "Billing report modal should have report-billing class");
         assert.ok(!reportModal.classList.contains('report-tasks'), "Billing report modal should not have report-tasks class");
+        assert.strictEqual(reportTitleEl.textContent, "Billing Report", "Billing report title should be 'Billing Report'");
 
         // Show report as tasks
         window.showReport('inv-123', 'tasks');
         assert.ok(reportModal.classList.contains('report-tasks'), "Tasks report modal should have report-tasks class");
         assert.ok(!reportModal.classList.contains('report-billing'), "Tasks report modal should not have report-billing class");
+        assert.strictEqual(reportTitleEl.textContent, "Task Report", "Tasks report title should be 'Task Report'");
     });
 
     console.log(`\nTests Completed: ${passed} Passed, ${failed} Failed`);
