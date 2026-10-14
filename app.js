@@ -67,6 +67,13 @@ async function init() {
     setDefaultTimes();
     renderAll();
     setupEventListeners();
+    try {
+        if (typeof window !== 'undefined' && window.checkGistOnStartup) {
+            await window.checkGistOnStartup();
+        }
+    } catch (e) {
+        console.warn("Gist startup check failed:", e);
+    }
 }
 
 // Global exposure for inline onclick
@@ -235,6 +242,8 @@ async function loadState() {
 }
 
 function saveState() {
+    state.timestamp = new Date().toISOString();
+    state.lastUpdated = state.timestamp;
     const p = saveToDB(STORAGE_KEY, state).then(() => renderAll()).catch(console.error);
     return p;
 }
@@ -312,6 +321,43 @@ function setupEventListeners() {
         document.getElementById('edit-task-modal').classList.add('hidden');
     };
 
+    window.openExportGistModal = function() {
+        const modal = document.getElementById('export-gist-modal');
+        if (!modal) return;
+        const dateStr = new Date().toISOString().split('T')[0];
+        const descInput = document.getElementById('gist-desc');
+        const filenameInput = document.getElementById('gist-filename');
+        const tokenInput = document.getElementById('gist-token');
+        const statusEl = document.getElementById('gist-status');
+        const submitBtn = document.getElementById('submit-export-gist');
+
+        if (descInput) descInput.value = 'TimeTracker Backup';
+        if (filenameInput) filenameInput.value = 'data.json';
+        if (tokenInput) {
+            const savedToken = (typeof window !== 'undefined' && window.getSavedGitHubToken)
+                ? window.getSavedGitHubToken()
+                : ((typeof localStorage !== 'undefined' && (localStorage.getItem('github_token') || localStorage.getItem('github_gist_token') || localStorage.getItem('github_personal_access_token'))) || '');
+            tokenInput.value = savedToken;
+        }
+        if (statusEl) {
+            statusEl.style.display = 'none';
+            statusEl.innerHTML = '';
+            statusEl.className = '';
+        }
+        const existingGistId = (typeof localStorage !== 'undefined') ? localStorage.getItem('github_gist_id') : null;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = existingGistId ? 'Update Gist' : 'Save to Gist';
+        }
+
+        modal.classList.remove('hidden');
+    };
+
+    window.closeExportGistModal = function() {
+        const modal = document.getElementById('export-gist-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
     document.getElementById('close-consultant-modal').addEventListener('click', window.closeConsultantModal);
     document.getElementById('cancel-consultant').addEventListener('click', window.closeConsultantModal);
     
@@ -323,6 +369,19 @@ function setupEventListeners() {
     document.getElementById('close-manage-tasks').addEventListener('click', window.closeManageTasksModal);
     document.getElementById('close-edit-task').addEventListener('click', window.closeEditTaskModal);
     document.getElementById('cancel-edit-task').addEventListener('click', window.closeEditTaskModal);
+
+    const closeExportGistBtn = document.getElementById('close-export-gist');
+    if (closeExportGistBtn) closeExportGistBtn.addEventListener('click', window.closeExportGistModal);
+    const cancelExportGistBtn = document.getElementById('cancel-export-gist');
+    if (cancelExportGistBtn) cancelExportGistBtn.addEventListener('click', window.closeExportGistModal);
+    const exportGistModalEl = document.getElementById('export-gist-modal');
+    if (exportGistModalEl) {
+        exportGistModalEl.addEventListener('click', (e) => {
+            if (e.target.id === 'export-gist-modal') {
+                window.closeExportGistModal();
+            }
+        });
+    }
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -905,8 +964,43 @@ function setupEventListeners() {
         }
     });
 
+    window.saveGitHubToken = function(token) {
+        if (typeof localStorage !== 'undefined') {
+            if (token) {
+                localStorage.setItem('github_token', token);
+                localStorage.setItem('github_gist_token', token);
+                localStorage.setItem('github_personal_access_token', token);
+            }
+        }
+    };
+
+    window.getSavedGitHubToken = function() {
+        if (typeof localStorage === 'undefined') return '';
+        return localStorage.getItem('github_token') ||
+               localStorage.getItem('github_gist_token') ||
+               localStorage.getItem('github_personal_access_token') ||
+               '';
+    };
+
+    window.getExportData = function() {
+        // Deep copy state to ensure isolation
+        const exportState = JSON.parse(JSON.stringify(state));
+        // Guarantee no token or sensitive credentials exist in the exported JSON
+        delete exportState.githubToken;
+        delete exportState.github_token;
+        delete exportState.github_gist_token;
+        delete exportState.githubPersonalAccessToken;
+        delete exportState.personalAccessToken;
+        delete exportState.token;
+        delete exportState.authToken;
+        // Include timestamp in the exported JSON
+        exportState.timestamp = new Date().toISOString();
+        return exportState;
+    };
+
     window.downloadBackup = function() {
-        const dataStr = JSON.stringify(state, null, 2);
+        const exportData = window.getExportData();
+        const dataStr = JSON.stringify(exportData, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
@@ -921,9 +1015,380 @@ function setupEventListeners() {
     };
 
     // Data Management
+    // Alias export-gist-btn to export-gist
+    const origGetElementById = document.getElementById.bind(document);
+    document.getElementById = function(id) {
+        if (id === 'export-gist-btn') {
+            return origGetElementById('export-gist') || origGetElementById(id);
+        }
+        return origGetElementById(id);
+    };
+
+    window.getLocalTimestamp = function() {
+        if (state) {
+            if (state.timestamp) {
+                const t = new Date(state.timestamp).getTime();
+                if (!isNaN(t) && t > 0) return t;
+            }
+            if (state.lastUpdated) {
+                const t = new Date(state.lastUpdated).getTime();
+                if (!isNaN(t) && t > 0) return t;
+            }
+            if (Array.isArray(state.tasks) && state.tasks.length > 0) {
+                const taskTimes = state.tasks.map(task => {
+                    const timeStr = task.end || task.start;
+                    return timeStr ? new Date(timeStr).getTime() : 0;
+                }).filter(time => !isNaN(time) && time > 0);
+                if (taskTimes.length > 0) {
+                    return Math.max(...taskTimes);
+                }
+            }
+        }
+        return 0;
+    };
+
+    window.getGistTimestamp = function(gistData, gistMeta) {
+        if (gistData) {
+            if (gistData.timestamp) {
+                const t = new Date(gistData.timestamp).getTime();
+                if (!isNaN(t) && t > 0) return t;
+            }
+            if (gistData.lastUpdated) {
+                const t = new Date(gistData.lastUpdated).getTime();
+                if (!isNaN(t) && t > 0) return t;
+            }
+        }
+        if (gistMeta && gistMeta.updated_at) {
+            const t = new Date(gistMeta.updated_at).getTime();
+            if (!isNaN(t) && t > 0) return t;
+        }
+        return 0;
+    };
+
+    window.loadStateFromGistData = async function(importedData) {
+        if (importedData && importedData.projects && Array.isArray(importedData.tasks)) {
+            importedData.tasks.forEach(task => {
+                if (task.start && task.end && task.start !== task.end) {
+                    const startTime = new Date(task.start);
+                    const endTime = new Date(task.end);
+                    const rawDurationMs = endTime.getTime() - startTime.getTime();
+                    const roundedDurationMs = Math.max(60000, Math.round(rawDurationMs / 60000) * 60000);
+                    task.durationMs = roundedDurationMs;
+                    task.end = new Date(startTime.getTime() + roundedDurationMs).toISOString();
+                }
+            });
+            state = importedData;
+            await saveToDB(STORAGE_KEY, state);
+            renderAll();
+            return true;
+        }
+        return false;
+    };
+
+    window.checkGistOnStartup = async function() {
+        const token = window.getSavedGitHubToken();
+        if (!token) return false;
+
+        const authHeader = token.startsWith('Bearer ') || token.startsWith('token ')
+            ? token
+            : `Bearer ${token}`;
+
+        const fetchFn = (typeof window !== 'undefined' && window.fetch) ? window.fetch.bind(window) : fetch;
+
+        let gistId = (typeof localStorage !== 'undefined') ? localStorage.getItem('github_gist_id') : null;
+
+        try {
+            // If no gist ID in localStorage, check user's gists list
+            if (!gistId) {
+                const listRes = await fetchFn('https://api.github.com/gists?per_page=100', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/vnd.github+json',
+                        'Authorization': authHeader,
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                if (listRes.ok) {
+                    const gists = await listRes.json();
+                    if (Array.isArray(gists)) {
+                        const match = gists.find(g => 
+                            g.description === 'TimeTracker Backup' || 
+                            (g.files && g.files['data.json'])
+                        );
+                        if (match && match.id) {
+                            gistId = match.id;
+                            if (typeof localStorage !== 'undefined') {
+                                localStorage.setItem('github_gist_id', gistId);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!gistId) return false;
+
+            // Fetch gist details
+            const gistRes = await fetchFn(`https://api.github.com/gists/${gistId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/vnd.github+json',
+                    'Authorization': authHeader,
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            });
+
+            if (!gistRes.ok) return false;
+
+            const gist = await gistRes.json();
+            if (!gist || !gist.files || !gist.files['data.json']) return false;
+
+            let content = gist.files['data.json'].content;
+            if (!content && gist.files['data.json'].raw_url) {
+                const rawRes = await fetchFn(gist.files['data.json'].raw_url);
+                if (rawRes.ok) {
+                    content = await rawRes.text();
+                }
+            }
+
+            if (!content) return false;
+
+            const gistData = JSON.parse(content);
+            const gistTime = window.getGistTimestamp(gistData, gist);
+            const localTime = window.getLocalTimestamp();
+
+            if (gistTime > localTime) {
+                const dateDisplay = gistTime > 0 ? `from ${new Date(gistTime).toLocaleString()}` : '';
+                const message = `A newer backup was found on GitHub Gist (${dateDisplay}).\n\nDo you want to load data from the Gist, replacing your local data?`;
+                const confirmed = (typeof window !== 'undefined' && typeof window.confirm === 'function')
+                    ? window.confirm(message)
+                    : confirm(message);
+
+                if (confirmed) {
+                    await window.loadStateFromGistData(gistData);
+                    return true;
+                }
+            }
+        } catch (err) {
+            console.warn('Error checking GitHub Gist on startup:', err);
+        }
+        return false;
+    };
+
+    window.exportToGist = async function(token, options = {}) {
+        const authToken = (token || window.getSavedGitHubToken() || '').trim();
+        if (!authToken) {
+            throw new Error('GitHub Personal Access Token is required.');
+        }
+
+        // Save token to localStorage
+        window.saveGitHubToken(authToken);
+
+        const description = (options.description && options.description.trim()) || "TimeTracker Backup";
+        const filename = (options.filename && options.filename.trim()) || "data.json";
+        const isPublic = options.public === true;
+        const exportData = window.getExportData();
+        const dataStr = JSON.stringify(exportData, null, 2);
+
+        const payload = {
+            description: description,
+            files: {
+                [filename]: {
+                    content: dataStr
+                }
+            }
+        };
+
+        const authHeader = authToken.startsWith('Bearer ') || authToken.startsWith('token ')
+            ? authToken
+            : `Bearer ${authToken}`;
+
+        const fetchFn = (typeof window !== 'undefined' && window.fetch) ? window.fetch.bind(window) : fetch;
+
+        let existingGistId = options.gistId || ((typeof localStorage !== 'undefined') ? localStorage.getItem('github_gist_id') : null);
+
+        // If no gist ID is stored, check if a gist with this description or file already exists on GitHub
+        if (!existingGistId) {
+            try {
+                const listRes = await fetchFn('https://api.github.com/gists?per_page=100', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/vnd.github+json',
+                        'Authorization': authHeader,
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                if (listRes.ok) {
+                    const gists = await listRes.json();
+                    if (Array.isArray(gists)) {
+                        const match = gists.find(g => 
+                            g.description === description || 
+                            (g.files && g.files[filename])
+                        );
+                        if (match && match.id) {
+                            existingGistId = match.id;
+                        }
+                    }
+                }
+            } catch (e) {
+                // Ignore search error and proceed
+            }
+        }
+
+        let response;
+        let created = false;
+
+        // Try updating existing gist if found
+        if (existingGistId) {
+            response = await fetchFn(`https://api.github.com/gists/${existingGistId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Accept': 'application/vnd.github+json',
+                    'Authorization': authHeader,
+                    'X-GitHub-Api-Version': '2022-11-28',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            // If 404 (deleted on GitHub), clear stored ID and fall back to create
+            if (response.status === 404) {
+                existingGistId = null;
+                if (typeof localStorage !== 'undefined') {
+                    localStorage.removeItem('github_gist_id');
+                }
+            }
+        }
+
+        // If no existing gist, create a new one
+        if (!existingGistId) {
+            created = true;
+            payload.public = isPublic;
+            response = await fetchFn('https://api.github.com/gists', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/vnd.github+json',
+                    'Authorization': authHeader,
+                    'X-GitHub-Api-Version': '2022-11-28',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            const errorMsg = (data && data.message) ? data.message : `HTTP ${response.status}: ${response.statusText}`;
+            throw new Error(errorMsg);
+        }
+
+        if (data.id && typeof localStorage !== 'undefined') {
+            localStorage.setItem('github_gist_id', data.id);
+        }
+
+        // Align local state timestamp with exported gist data
+        state.timestamp = exportData.timestamp;
+        state.lastUpdated = exportData.timestamp;
+        await saveToDB(STORAGE_KEY, state);
+
+        data._wasCreated = created;
+        return data;
+    };
+    window.storeToGist = window.exportToGist;
+
     document.getElementById('export-data').addEventListener('click', () => {
         window.downloadBackup();
     });
+
+    const exportGistBtn = document.getElementById('export-gist');
+    if (exportGistBtn) {
+        exportGistBtn.addEventListener('click', () => {
+            window.openExportGistModal();
+        });
+    }
+
+    const gistTokenInput = document.getElementById('gist-token');
+    if (gistTokenInput) {
+        gistTokenInput.addEventListener('input', () => {
+            if (gistTokenInput.value.trim()) {
+                window.saveGitHubToken(gistTokenInput.value.trim());
+            }
+        });
+        gistTokenInput.addEventListener('change', () => {
+            if (gistTokenInput.value.trim()) {
+                window.saveGitHubToken(gistTokenInput.value.trim());
+            }
+        });
+    }
+
+    const gistForm = document.getElementById('gist-form');
+    if (gistForm) {
+        gistForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tokenInput = document.getElementById('gist-token');
+            const descInput = document.getElementById('gist-desc');
+            const filenameInput = document.getElementById('gist-filename');
+            const publicInput = document.getElementById('gist-public');
+            const statusEl = document.getElementById('gist-status');
+            const submitBtn = document.getElementById('submit-export-gist');
+
+            const token = tokenInput ? tokenInput.value.trim() : '';
+            if (!token) {
+                alert('Please enter a GitHub Personal Access Token.');
+                return;
+            }
+
+            // Always save token in localStorage
+            window.saveGitHubToken(token);
+
+            const isPublic = publicInput ? publicInput.checked : false;
+            const description = descInput && descInput.value.trim() ? descInput.value.trim() : 'TimeTracker Backup';
+            const filename = filenameInput && filenameInput.value.trim() ? filenameInput.value.trim() : 'data.json';
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving...';
+            }
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.style.backgroundColor = 'var(--input-bg)';
+                statusEl.style.color = 'var(--text-primary)';
+                statusEl.style.border = '1px solid var(--border-color)';
+                statusEl.textContent = 'Saving backup to GitHub Gist...';
+            }
+
+            try {
+                const result = await window.exportToGist(token, {
+                    filename,
+                    description,
+                    public: isPublic
+                });
+
+                if (statusEl) {
+                    statusEl.style.display = 'block';
+                    statusEl.style.backgroundColor = '#dcfce7';
+                    statusEl.style.color = '#15803d';
+                    statusEl.style.border = '1px solid #86efac';
+                    const actionWord = result._wasCreated ? 'created' : 'updated';
+                    statusEl.innerHTML = `Gist ${actionWord} successfully! <a href="${result.html_url}" target="_blank" rel="noopener noreferrer" style="color: #15803d; font-weight: bold; text-decoration: underline;">View Gist</a>`;
+                }
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.style.display = 'block';
+                    statusEl.style.backgroundColor = '#fee2e2';
+                    statusEl.style.color = '#b91c1c';
+                    statusEl.style.border = '1px solid #fca5a5';
+                    statusEl.textContent = `Error: ${err.message}`;
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    const existingGistId = (typeof localStorage !== 'undefined') ? localStorage.getItem('github_gist_id') : null;
+                    submitBtn.textContent = existingGistId ? 'Update Gist' : 'Save to Gist';
+                }
+            }
+        });
+    }
 
     document.getElementById('import-data-btn').addEventListener('click', () => {
         document.getElementById('import-data-input').click();

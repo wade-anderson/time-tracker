@@ -448,6 +448,216 @@ async function runTests() {
         assert.strictEqual(reportTitleEl.textContent, "Task Report", "Tasks report title should be 'Task Report'");
     });
 
+    await test("Requirement 29: Export to GitHub Gist button exists and modal opens/closes", async () => {
+        const exportGistBtn = document.getElementById('export-gist');
+        assert.ok(exportGistBtn, "Export to GitHub Gist button should exist");
+        assert.ok(exportGistBtn.textContent.includes("Gist"), "Button text should mention Gist");
+
+        const modal = document.getElementById('export-gist-modal');
+        assert.ok(modal, "Export Gist modal should exist");
+        assert.ok(modal.classList.contains('hidden'), "Modal should initially be hidden");
+
+        // Click button to open modal
+        exportGistBtn.click();
+        assert.ok(!modal.classList.contains('hidden'), "Modal should be visible after clicking button");
+
+        // Test ESC closes modal
+        document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
+        assert.ok(modal.classList.contains('hidden'), "Modal should be closed by ESC key");
+
+        // Open again and close with close button
+        exportGistBtn.click();
+        assert.ok(!modal.classList.contains('hidden'));
+        document.getElementById('close-export-gist').click();
+        assert.ok(modal.classList.contains('hidden'), "Modal should be closed by close button");
+    });
+
+    await test("Requirement 29: Exporting to GitHub Gist creates new gist or updates existing", async () => {
+        let calls = [];
+        window.fetch = async (url, options) => {
+            calls.push({ url, options });
+            if (options && options.method === 'PATCH') {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        id: "mock_gist_12345",
+                        html_url: "https://gist.github.com/mock_gist_12345"
+                    })
+                };
+            }
+            if (options && options.method === 'GET') {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => []
+                };
+            }
+            return {
+                ok: true,
+                status: 201,
+                json: async () => ({
+                    id: "mock_gist_12345",
+                    html_url: "https://gist.github.com/mock_gist_12345"
+                })
+            };
+        };
+
+        // Clear any stored gist id first
+        window.localStorage.removeItem('github_gist_id');
+
+        const exportGistBtn = document.getElementById('export-gist');
+        exportGistBtn.click();
+
+        setVal('gist-token', 'ghp_testsecret123');
+        await submitForm('gist-form');
+
+        // First call should have created the gist (POST)
+        const postCall = calls.find(c => c.options && c.options.method === 'POST');
+        assert.ok(postCall, "A POST request should have been made to create the gist");
+        assert.strictEqual(postCall.url, "https://api.github.com/gists");
+        assert.strictEqual(postCall.options.headers['Authorization'], "Bearer ghp_testsecret123");
+        
+        const payload = JSON.parse(postCall.options.body);
+        assert.strictEqual(payload.description, "TimeTracker Backup", "Description should be 'TimeTracker Backup'");
+        assert.ok(payload.files["data.json"], "Filename should be 'data.json'");
+        
+        const fileContent = JSON.parse(payload.files["data.json"].content);
+        assert.ok(Array.isArray(fileContent.tasks), "Exported file content should contain tasks array");
+        assert.ok(Array.isArray(fileContent.projects), "Exported file content should contain projects array");
+        assert.ok(fileContent.timestamp, "Exported file content should include a timestamp");
+        assert.ok(!isNaN(Date.parse(fileContent.timestamp)), "Exported timestamp should be a valid date string");
+
+        const statusEl = document.getElementById('gist-status');
+        assert.ok(statusEl.style.display !== 'none', "Status element should be displayed");
+        assert.ok(statusEl.innerHTML.includes("https://gist.github.com/mock_gist_12345"), "Status should include gist URL");
+
+        // Verify token is in localStorage
+        const storedToken = window.localStorage.getItem('github_token') || window.localStorage.getItem('github_gist_token');
+        assert.strictEqual(storedToken, 'ghp_testsecret123', "Token should be stored in localStorage");
+
+        // Verify gist ID is saved in localStorage
+        assert.strictEqual(window.localStorage.getItem('github_gist_id'), 'mock_gist_12345', "Gist ID should be saved in localStorage");
+
+        // Verify token is NOT in the exported JSON payload
+        const rawJsonString = payload.files["data.json"].content;
+        assert.ok(!rawJsonString.includes('ghp_testsecret123'), "Token must NOT be in the exported JSON string");
+        assert.strictEqual(fileContent.githubToken, undefined, "githubToken must not be present in exported json");
+        assert.strictEqual(fileContent.github_token, undefined, "github_token must not be present in exported json");
+        assert.strictEqual(fileContent.token, undefined, "token must not be present in exported json");
+
+        // Second export: now that gist exists, it should PATCH instead of creating a new gist
+        calls = [];
+        await window.exportToGist('ghp_testsecret123');
+
+        const patchCall = calls.find(c => c.options && c.options.method === 'PATCH');
+        assert.ok(patchCall, "Should make a PATCH request to update the existing gist");
+        assert.strictEqual(patchCall.url, "https://api.github.com/gists/mock_gist_12345");
+        
+        const patchPayload = JSON.parse(patchCall.options.body);
+        assert.strictEqual(patchPayload.description, "TimeTracker Backup", "Updated gist description should remain 'TimeTracker Backup'");
+        assert.ok(patchPayload.files["data.json"], "Updated gist file should remain 'data.json'");
+        
+        const postCallsSecondTime = calls.filter(c => c.options && c.options.method === 'POST');
+        assert.strictEqual(postCallsSecondTime.length, 0, "Should not create a new gist when one already exists");
+    });
+
+    await test("Startup Gist Check: Prompts and replaces local data if Gist is newer", async () => {
+        // Set up mock token and gist ID in localStorage
+        window.localStorage.setItem('github_token', 'ghp_testsecret123');
+        window.localStorage.setItem('github_gist_id', 'mock_gist_12345');
+
+        // Create a newer timestamp for the gist data (e.g. 1 hour in the future compared to local)
+        const futureTime = new Date(Date.now() + 3600000).toISOString();
+        const newerGistState = {
+            customers: [{ id: "cust-gist-1", name: "Gist Customer", hourlyRate: 200, requestors: [] }],
+            projects: [{ id: "proj-gist-1", name: "Gist Project", customerId: "cust-gist-1", status: "active" }],
+            tasks: [{ id: "task-gist-1", desc: "Gist Task", projectId: "proj-gist-1", start: futureTime, end: futureTime, durationMs: 0 }],
+            invoices: [],
+            timestamp: futureTime
+        };
+
+        window.fetch = async (url, options) => {
+            if (url.includes('/gists/mock_gist_12345')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        id: "mock_gist_12345",
+                        description: "TimeTracker Backup",
+                        updated_at: futureTime,
+                        files: {
+                            "data.json": {
+                                content: JSON.stringify(newerGistState)
+                            }
+                        }
+                    })
+                };
+            }
+            return { ok: false, status: 404, json: async () => ({}) };
+        };
+
+        let confirmAsked = false;
+        let confirmMessage = "";
+        window.confirm = (msg) => {
+            confirmAsked = true;
+            confirmMessage = msg;
+            return true;
+        };
+
+        const result = await window.checkGistOnStartup();
+        assert.ok(result, "checkGistOnStartup should return true when gist data is loaded");
+        assert.ok(confirmAsked, "User should be asked for confirmation to replace local data");
+        assert.ok(confirmMessage.toLowerCase().includes("newer"), "Confirmation message should mention newer backup");
+
+        // Verify local state was replaced with Gist data
+        const stored = await getStoredState();
+        assert.ok(stored.customers.some(c => c.name === "Gist Customer"), "Local state should have customer from Gist");
+        assert.ok(stored.tasks.some(t => t.desc === "Gist Task"), "Local state should have task from Gist");
+    });
+
+    await test("Startup Gist Check: Does NOT prompt if Gist data is older or equal", async () => {
+        // Set Gist data to an older timestamp (e.g. 1 hour in the past)
+        const pastTime = new Date(Date.now() - 3600000).toISOString();
+        const olderGistState = {
+            customers: [{ id: "cust-old", name: "Old Customer", hourlyRate: 100 }],
+            projects: [],
+            tasks: [],
+            invoices: [],
+            timestamp: pastTime
+        };
+
+        window.fetch = async (url, options) => {
+            if (url.includes('/gists/mock_gist_12345')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        id: "mock_gist_12345",
+                        description: "TimeTracker Backup",
+                        updated_at: pastTime,
+                        files: {
+                            "data.json": {
+                                content: JSON.stringify(olderGistState)
+                            }
+                        }
+                    })
+                };
+            }
+            return { ok: false, status: 404, json: async () => ({}) };
+        };
+
+        let confirmAsked = false;
+        window.confirm = () => {
+            confirmAsked = true;
+            return true;
+        };
+
+        const result = await window.checkGistOnStartup();
+        assert.strictEqual(result, false, "checkGistOnStartup should return false when gist is not newer");
+        assert.strictEqual(confirmAsked, false, "Should not ask user when Gist is not newer");
+    });
+
     console.log(`\nTests Completed: ${passed} Passed, ${failed} Failed`);
     process.exit(failed > 0 ? 1 : 0);
 }

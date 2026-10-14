@@ -45,6 +45,11 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
         </button>
+        <button id="toolbar-gist" class="sidebar-btn" title="Export to GitHub Gist" onclick="document.getElementById('export-gist').click()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+            </svg>
+        </button>
     </nav>
 
     <div class="app-container">
@@ -161,6 +166,7 @@
                 <p class="subtitle" style="margin-bottom: 16px;">Export, import, or delete your locally stored data.</p>
                 <div class="form-row">
                     <button id="export-data" class="btn btn-secondary">Export Data</button>
+                    <button id="export-gist" class="btn btn-secondary">Export to GitHub Gist</button>
                     <button id="import-data-btn" class="btn btn-secondary">Import Data</button>
                     <!-- Hidden file input for importing -->
                     <input type="file" id="import-data-input" accept=".json" style="display: none;">
@@ -472,6 +478,47 @@
                     <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
                         <button type="button" id="cancel-edit-customer" class="btn btn-secondary">Cancel</button>
                         <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export to GitHub Gist Modal -->
+    <div id="export-gist-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 540px;">
+            <div class="modal-header">
+                <h2>Export to GitHub Gist</h2>
+                <button id="close-export-gist" class="btn-close" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="subtitle" style="margin-bottom: 20px;">Store your TimeTracker backup data as a GitHub Gist.</p>
+                <form id="gist-form">
+                    <div class="input-group">
+                        <label for="gist-token">GitHub Personal Access Token</label>
+                        <input type="password" id="gist-token" required placeholder="ghp_... or github_pat_..." autocomplete="off">
+                        <small style="color: var(--text-secondary); margin-top: 6px; font-size: 0.8rem; line-height: 1.4;">
+                            Requires a GitHub token with the <code>gist</code> permission. Token is saved in localStorage and never included in exported JSON data.
+                        </small>
+                    </div>
+                    <div class="input-group" style="margin-top: 12px;">
+                        <label for="gist-desc">Gist Description</label>
+                        <input type="text" id="gist-desc" value="TimeTracker Backup" placeholder="TimeTracker Backup">
+                    </div>
+                    <div class="input-group" style="margin-top: 12px;">
+                        <label for="gist-filename">Filename</label>
+                        <input type="text" id="gist-filename" value="data.json" placeholder="data.json">
+                    </div>
+                    <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                            <input type="checkbox" id="gist-public" style="width: auto;"> Make gist public (default: secret)
+                        </label>
+                        <input type="checkbox" id="gist-save-token" checked style="display: none;">
+                    </div>
+                    <div id="gist-status" style="margin-top: 16px; font-size: 0.9rem; display: none; padding: 12px; border-radius: 6px; word-break: break-word;"></div>
+                    <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" id="cancel-export-gist" class="btn btn-secondary" style="width: auto; padding: 10px 20px;">Cancel</button>
+                        <button type="submit" id="submit-export-gist" class="btn btn-primary" style="width: auto; padding: 10px 20px;">Save to Gist</button>
                     </div>
                 </form>
             </div>
