@@ -20,6 +20,7 @@ async function runTests() {
     // Use JSDOM's native localStorage instead of custom mock
     window.alert = () => {};
     window.confirm = () => true;
+    window.prompt = () => null;
     window.URL.createObjectURL = () => "blob:http://localhost/mock-url";
     window.URL.revokeObjectURL = () => {};
     
@@ -228,6 +229,7 @@ async function runTests() {
         const testDocument = testWindow.document;
         testWindow.alert = () => {};
         testWindow.confirm = () => true;
+        testWindow.prompt = () => null;
         testWindow.URL.createObjectURL = () => "blob:http://localhost/mock-url";
         testWindow.URL.revokeObjectURL = () => {};
         testWindow.indexedDB = global.indexedDB;
@@ -285,6 +287,7 @@ async function runTests() {
         const testDocument2 = testDom2.window.document;
         testWindow2.alert = () => {};
         testWindow2.confirm = () => true;
+        testWindow2.prompt = () => null;
         testWindow2.URL.createObjectURL = () => "blob:http://localhost/mock-url";
         testWindow2.URL.revokeObjectURL = () => {};
         testWindow2.indexedDB = global.indexedDB;
@@ -357,6 +360,7 @@ async function runTests() {
         const testDocument3 = testDom3.window.document;
         testWindow3.alert = () => {};
         testWindow3.confirm = () => true;
+        testWindow3.prompt = () => null;
         testWindow3.URL.createObjectURL = () => "blob:http://localhost/mock-url";
         testWindow3.URL.revokeObjectURL = () => {};
         testWindow3.indexedDB = global.indexedDB;
@@ -656,6 +660,128 @@ async function runTests() {
         const result = await window.checkGistOnStartup();
         assert.strictEqual(result, false, "checkGistOnStartup should return false when gist is not newer");
         assert.strictEqual(confirmAsked, false, "Should not ask user when Gist is not newer");
+    });
+
+    await test("Startup Token Prompt: When no GitHub token exists, prompts user for token, saves it, and gets data from Gist", async () => {
+        // Clear all stored tokens
+        window.localStorage.removeItem('github_token');
+        window.localStorage.removeItem('github_gist_token');
+        window.localStorage.removeItem('github_personal_access_token');
+        window.localStorage.removeItem('github_gist_id');
+
+        const promptGistState = {
+            customers: [{ id: "cust-from-prompt-gist", name: "Prompted Gist Customer", hourlyRate: 175, requestors: ["Alice"] }],
+            projects: [{ id: "proj-from-prompt-gist", name: "Prompted Gist Project", customerId: "cust-from-prompt-gist", status: "active" }],
+            tasks: [{ id: "task-from-prompt-gist", desc: "Prompted Gist Task", projectId: "proj-from-prompt-gist", start: new Date().toISOString(), end: new Date().toISOString(), durationMs: 0 }],
+            invoices: [],
+            timestamp: new Date().toISOString()
+        };
+
+        let promptCalled = false;
+        let promptMessage = "";
+        window.prompt = (msg) => {
+            promptCalled = true;
+            promptMessage = msg;
+            return "ghp_prompted_token_xyz";
+        };
+
+        window.fetch = async (url, options) => {
+            if (url.includes('/gists?per_page=100')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => [{
+                        id: "gist_prompt_123",
+                        description: "TimeTracker Backup",
+                        files: { "data.json": {} }
+                    }]
+                };
+            }
+            if (url.includes('/gists/gist_prompt_123')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        id: "gist_prompt_123",
+                        description: "TimeTracker Backup",
+                        files: {
+                            "data.json": {
+                                content: JSON.stringify(promptGistState)
+                            }
+                        }
+                    })
+                };
+            }
+            return { ok: false, status: 404, json: async () => ({}) };
+        };
+
+        const result = await window.checkGistOnStartup();
+        assert.ok(result, "checkGistOnStartup should return true when data is retrieved from gist after entering token");
+        assert.ok(promptCalled, "window.prompt should be called when no token exists");
+        assert.ok(promptMessage.toLowerCase().includes("token"), "Prompt message should mention personal access token");
+        assert.strictEqual(window.getSavedGitHubToken(), "ghp_prompted_token_xyz", "Entered token should be saved in localStorage");
+        assert.strictEqual(window.localStorage.getItem('github_gist_id'), "gist_prompt_123", "Gist ID should be saved");
+
+        // Verify state was populated
+        const stored = await getStoredState();
+        assert.ok(stored.customers.some(c => c.name === "Prompted Gist Customer"), "Local state should have customer from Gist");
+        assert.ok(stored.tasks.some(t => t.desc === "Prompted Gist Task"), "Local state should have task from Gist");
+    });
+
+    await test("Startup Token Prompt: When no GitHub token exists and user cancels prompt, does not save token or fetch gist", async () => {
+        window.localStorage.removeItem('github_token');
+        window.localStorage.removeItem('github_gist_token');
+        window.localStorage.removeItem('github_personal_access_token');
+        window.localStorage.removeItem('github_gist_id');
+
+        let promptCalled = false;
+        window.prompt = () => {
+            promptCalled = true;
+            return null; // User clicked Cancel
+        };
+
+        let fetchCalled = false;
+        window.fetch = async () => {
+            fetchCalled = true;
+            return { ok: false };
+        };
+
+        const result = await window.checkGistOnStartup();
+        assert.strictEqual(result, false, "checkGistOnStartup should return false when prompt cancelled");
+        assert.ok(promptCalled, "Prompt should have been displayed");
+        assert.strictEqual(window.getSavedGitHubToken(), "", "No token should be saved if cancelled");
+        assert.strictEqual(fetchCalled, false, "GitHub API fetch should not be called if prompt was cancelled");
+    });
+
+    await test("Startup Token Prompt: When GitHub token already exists, does not prompt for token", async () => {
+        window.localStorage.setItem('github_token', 'ghp_already_saved_123');
+        window.localStorage.setItem('github_gist_id', 'mock_gist_12345');
+
+        let promptCalled = false;
+        window.prompt = () => {
+            promptCalled = true;
+            return "unexpected";
+        };
+
+        window.fetch = async () => {
+            return {
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    id: "mock_gist_12345",
+                    description: "TimeTracker Backup",
+                    updated_at: new Date(Date.now() - 3600000).toISOString(),
+                    files: {
+                        "data.json": {
+                            content: JSON.stringify({ timestamp: new Date(Date.now() - 3600000).toISOString(), tasks: [], projects: [], customers: [], invoices: [] })
+                        }
+                    }
+                })
+            };
+        };
+
+        await window.checkGistOnStartup();
+        assert.strictEqual(promptCalled, false, "Prompt should not be displayed when token is already present");
     });
 
     console.log(`\nTests Completed: ${passed} Passed, ${failed} Failed`);

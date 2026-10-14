@@ -18,3 +18,4 @@ Automatically download a backup when a task is logged.
 Add a button that stores the data export json file to a github gist. Updates the existing gist if present instead of creating a new one, using Gist Description "TimeTracker Backup" and Filename "data.json". Includes a timestamp in the exported json.
 
 Check github gist data on startup. If gist data is newer than local, ask user if they want to load data from gist replacing local data.
+If no github personal access token exists at startup, prompt for one and get the data from gist.

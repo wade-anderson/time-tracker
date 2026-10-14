@@ -1086,7 +1086,25 @@ function setupEventListeners() {
     };
 
     window.checkGistOnStartup = async function() {
-        const token = window.getSavedGitHubToken();
+        let token = window.getSavedGitHubToken();
+        let promptedForToken = false;
+
+        if (!token) {
+            const promptFn = (typeof window !== 'undefined' && typeof window.prompt === 'function')
+                ? window.prompt.bind(window)
+                : (typeof prompt === 'function' ? prompt : null);
+            if (promptFn) {
+                const inputToken = promptFn("Please enter your GitHub Personal Access Token to sync with GitHub Gist:");
+                if (inputToken && inputToken.trim()) {
+                    token = inputToken.trim();
+                    window.saveGitHubToken(token);
+                    promptedForToken = true;
+                    const tokenInput = document.getElementById('gist-token');
+                    if (tokenInput) tokenInput.value = token;
+                }
+            }
+        }
+
         if (!token) return false;
 
         const authHeader = token.startsWith('Bearer ') || token.startsWith('token ')
@@ -1156,7 +1174,10 @@ function setupEventListeners() {
             const gistTime = window.getGistTimestamp(gistData, gist);
             const localTime = window.getLocalTimestamp();
 
-            if (gistTime > localTime) {
+            if (promptedForToken) {
+                await window.loadStateFromGistData(gistData);
+                return true;
+            } else if (gistTime > localTime) {
                 const dateDisplay = gistTime > 0 ? `from ${new Date(gistTime).toLocaleString()}` : '';
                 const message = `A newer backup was found on GitHub Gist (${dateDisplay}).\n\nDo you want to load data from the Gist, replacing your local data?`;
                 const confirmed = (typeof window !== 'undefined' && typeof window.confirm === 'function')
