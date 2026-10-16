@@ -82,7 +82,15 @@ const idAliases = {
     'consultant-invoice-emails': 'consultant-invoice-email-list',
     'consultant-invoice-email': 'consultant-invoice-email-list',
     'consultant-invoiceEmailList': 'consultant-invoice-email-list',
-    'invoiceEmailList': 'consultant-invoice-email-list'
+    'invoiceEmailList': 'consultant-invoice-email-list',
+    'email-pdf-btn': 'email-pdf-report',
+    'email-pdf': 'email-pdf-report',
+    'btn-email-pdf': 'email-pdf-report',
+    'email-pdf-button': 'email-pdf-report',
+    'email-pdf-billing': 'email-pdf-report',
+    'email-pdf-invoice': 'email-pdf-report',
+    'email-billing-pdf': 'email-pdf-report',
+    'email-invoice-pdf': 'email-pdf-report'
 };
 
 if (typeof document !== 'undefined') {
@@ -516,6 +524,59 @@ function setupEventListeners() {
         if (modal) modal.classList.add('hidden');
     };
 
+    window.closeEmailConfirmModal = function(result = false) {
+        const modal = document.getElementById('email-confirm-modal');
+        if (modal) modal.classList.add('hidden');
+        if (window._emailConfirmResolver) {
+            const resolver = window._emailConfirmResolver;
+            window._emailConfirmResolver = null;
+            resolver(result);
+        }
+    };
+
+    window.promptEmailConfirmation = function(details = {}) {
+        const confirmMessage = details.confirmMessage || '';
+        const modal = document.getElementById('email-confirm-modal');
+
+        if (modal) {
+            const toEl = document.getElementById('email-confirm-to');
+            const subjEl = document.getElementById('email-confirm-subject');
+            const attEl = document.getElementById('email-confirm-attachment');
+            const fromEl = document.getElementById('email-confirm-from');
+            const smtpEl = document.getElementById('email-confirm-smtp');
+            const contentEl = document.getElementById('email-confirm-preview-content');
+
+            if (toEl) toEl.textContent = details.to || '';
+            if (subjEl) subjEl.textContent = details.subject || '';
+            if (attEl) attEl.textContent = details.attachment || '';
+            if (fromEl) fromEl.textContent = details.from || '';
+            if (smtpEl) smtpEl.textContent = details.smtp || '';
+            if (contentEl) contentEl.textContent = details.pdfContent || '';
+        }
+
+        // If window.confirm has been mocked (e.g. in automated tests or non-interactive runner)
+        const isMockedConfirm = typeof window !== 'undefined' &&
+            typeof window.confirm === 'function' &&
+            !window.confirm.toString().includes('[native code]');
+
+        if (isMockedConfirm) {
+            return Promise.resolve(window.confirm(confirmMessage));
+        }
+
+        // Interactive modal in real browser
+        if (modal) {
+            modal.classList.remove('hidden');
+            return new Promise((resolve) => {
+                window._emailConfirmResolver = resolve;
+            });
+        }
+
+        const confirmFn = (typeof window !== 'undefined' && typeof window.confirm === 'function')
+            ? window.confirm.bind(window)
+            : () => true;
+        return Promise.resolve(confirmFn(confirmMessage));
+    };
+
     document.getElementById('close-consultant-modal').addEventListener('click', window.closeConsultantModal);
     document.getElementById('cancel-consultant').addEventListener('click', window.closeConsultantModal);
     
@@ -541,8 +602,27 @@ function setupEventListeners() {
         });
     }
 
+    const closeEmailConfirmBtn = document.getElementById('close-email-confirm');
+    if (closeEmailConfirmBtn) closeEmailConfirmBtn.addEventListener('click', () => window.closeEmailConfirmModal(false));
+    const cancelEmailConfirmBtn = document.getElementById('cancel-email-confirm');
+    if (cancelEmailConfirmBtn) cancelEmailConfirmBtn.addEventListener('click', () => window.closeEmailConfirmModal(false));
+    const sendEmailConfirmBtn = document.getElementById('send-email-confirm');
+    if (sendEmailConfirmBtn) sendEmailConfirmBtn.addEventListener('click', () => window.closeEmailConfirmModal(true));
+    const emailConfirmModalEl = document.getElementById('email-confirm-modal');
+    if (emailConfirmModalEl) {
+        emailConfirmModalEl.addEventListener('click', (e) => {
+            if (e.target.id === 'email-confirm-modal') {
+                window.closeEmailConfirmModal(false);
+            }
+        });
+    }
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
+            const emailModal = document.getElementById('email-confirm-modal');
+            if (emailModal && !emailModal.classList.contains('hidden')) {
+                window.closeEmailConfirmModal(false);
+            }
             document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
         }
     });
@@ -912,6 +992,8 @@ function setupEventListeners() {
     });
 
     window.showReport = function(invoiceId = null, reportType = 'billing') {
+        window.currentReportInvoiceId = invoiceId;
+        window.currentReportType = reportType;
         const now = new Date();
         const invoice = invoiceId ? state.invoices.find(i => i.id === invoiceId) : null;
         const isGlobal = !invoiceId;
@@ -1104,7 +1186,905 @@ function setupEventListeners() {
             reportModal.classList.add('report-tasks');
             reportModal.classList.remove('report-billing');
         }
+        
+        const emailPdfBtn = document.getElementById('email-pdf-report');
+        if (emailPdfBtn) {
+            emailPdfBtn.style.display = 'inline-block';
+        }
+
         reportModal.classList.remove('hidden');
+    };
+
+    window.getReportPrintableHTML = function(invoiceId, reportType = 'tasks') {
+        const isBilling = reportType === 'billing';
+        const invoice = invoiceId ? state.invoices.find(i => i.id === invoiceId) : null;
+        const filteredTasks = invoiceId
+            ? state.tasks.filter(t => t.invoiceId === invoiceId)
+            : state.tasks;
+        const reportTitle = isBilling ? "Billing Report" : "Task Report";
+        const totalDuration = filteredTasks.reduce((sum, t) => sum + (t.durationMs || 0), 0);
+
+        let fromHtml = '';
+        if (state.consultant && state.consultant.name) {
+            fromHtml = `
+                <div style="flex: 1;">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 4px;">From</div>
+                    <div style="font-weight: 700; font-size: 1rem; color: #0f172a;">${escapeHTML(state.consultant.name)}</div>
+                    <div style="font-size: 0.85rem; color: #64748b; white-space: pre-line;">${escapeHTML(state.consultant.address || '')}</div>
+                    <div style="font-size: 0.85rem; color: #64748b;">${escapeHTML(state.consultant.email || '')} ${state.consultant.phone ? '| ' + escapeHTML(state.consultant.phone) : ''}</div>
+                </div>
+            `;
+        }
+
+        let toHtml = '';
+        if (invoice) {
+            const customer = state.customers.find(c => c.id === invoice.customerId);
+            if (customer) {
+                toHtml = `
+                    <div style="flex: 1; text-align: right;">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 4px;">To</div>
+                        <div style="font-weight: 700; font-size: 1rem; color: #0f172a;">${escapeHTML(customer.name)}</div>
+                        <div style="font-size: 0.85rem; color: #64748b; white-space: pre-line;">${escapeHTML(customer.address || '')}</div>
+                    </div>
+                `;
+            }
+        }
+
+        const projectTotals = {};
+        state.projects.forEach(p => projectTotals[p.id] = 0);
+        filteredTasks.forEach(t => {
+            if (projectTotals[t.projectId] !== undefined) projectTotals[t.projectId] += (t.durationMs || 0);
+        });
+
+        const relevantProjects = state.projects.filter(p => {
+            if (!invoiceId) return true;
+            return filteredTasks.some(t => t.projectId === p.id);
+        });
+
+        let bodyContent = '';
+        let reportTotalAmount = 0;
+
+        if (relevantProjects.length === 0) {
+            bodyContent = `<p style="color: #64748b; font-style: italic;">No tasks found.</p>`;
+        } else if (isBilling) {
+            let rowsHtml = '';
+            relevantProjects.forEach(p => {
+                const customer = state.customers.find(c => c.id === p.customerId);
+                const rate = (invoice && invoice.lockedRate !== undefined) ? invoice.lockedRate : (customer ? customer.hourlyRate : 0);
+                const projectTotalMs = projectTotals[p.id] || 0;
+                const projectAmount = (projectTotalMs / 3600000) * rate;
+                const roundedAmount = Math.round(projectAmount);
+                reportTotalAmount += roundedAmount;
+
+                rowsHtml += `
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 12px 8px; font-weight: 600;">${escapeHTML(p.name)}</td>
+                        <td style="padding: 12px 8px;">${formatDuration(projectTotalMs)}</td>
+                        <td style="padding: 12px 8px; text-align: right;">${formatCurrency(rate)}/hr</td>
+                        <td style="padding: 12px 8px; text-align: right; font-weight: 700;">${formatCurrency(roundedAmount, 0)}</td>
+                    </tr>
+                `;
+            });
+
+            bodyContent = `
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e2e8f0; text-align: left; color: #64748b;">
+                            <th style="padding: 12px 8px;">Project</th>
+                            <th style="padding: 12px 8px;">Hours</th>
+                            <th style="padding: 12px 8px; text-align: right;">Rate</th>
+                            <th style="padding: 12px 8px; text-align: right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                    <tfoot>
+                        <tr style="border-top: 2px solid #2563eb;">
+                            <td colspan="3" style="padding: 16px 8px; font-weight: 700; font-size: 1.1rem; text-align: right;">Total Amount Due:</td>
+                            <td style="padding: 16px 8px; font-weight: 700; font-size: 1.1rem; text-align: right; color: #059669;">${formatCurrency(reportTotalAmount, 0)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            `;
+        } else {
+            relevantProjects.forEach(p => {
+                const projectTasks = filteredTasks
+                    .filter(t => t.projectId === p.id)
+                    .sort((a, b) => new Date(a.start) - new Date(b.start));
+                const projectDurationMs = projectTasks.reduce((sum, t) => sum + (t.durationMs || 0), 0);
+
+                bodyContent += `
+                    <div class="report-project-block" style="margin-bottom: 30px;">
+                        <div style="background-color: #f8fafc; padding: 8px 12px; border-left: 4px solid #2563eb; font-weight: 700; font-size: 1rem; color: #2563eb; display: flex; justify-content: space-between; align-items: center; border-radius: 0 4px 4px 0; margin-bottom: 8px;">
+                            <span>Project: ${escapeHTML(p.name)}</span>
+                            <span class="report-project-total" style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Total: ${formatDuration(projectDurationMs)}</span>
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #e2e8f0; text-align: left; color: #64748b;">
+                                    <th style="padding: 12px 8px; width: 15%;">Date</th>
+                                    <th style="padding: 12px 8px; width: 55%;">Description</th>
+                                    <th style="padding: 12px 8px; width: 15%;">Requestor</th>
+                                    <th style="padding: 12px 8px; width: 15%; text-align: right;">Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${projectTasks.map(t => `
+                                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 12px 8px; color: #64748b;">${new Date(t.start).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                                        <td style="padding: 12px 8px; font-weight: 500;">${escapeHTML(t.desc)}</td>
+                                        <td style="padding: 12px 8px; color: #64748b; font-size: 0.85rem;">${escapeHTML(t.requestor) || '-'}</td>
+                                        <td style="padding: 12px 8px; text-align: right; font-weight: 600;">${formatDuration(t.durationMs)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            const unassignedTasks = filteredTasks.filter(t => !relevantProjects.some(p => p.id === t.projectId));
+            if (unassignedTasks.length > 0) {
+                const unassignedDurationMs = unassignedTasks.reduce((sum, t) => sum + (t.durationMs || 0), 0);
+                bodyContent += `
+                    <div class="report-project-block" style="margin-bottom: 30px;">
+                        <div style="background-color: #f8fafc; padding: 8px 12px; border-left: 4px solid #2563eb; font-weight: 700; font-size: 1rem; color: #2563eb; display: flex; justify-content: space-between; align-items: center; border-radius: 0 4px 4px 0; margin-bottom: 8px;">
+                            <span>${relevantProjects.length > 0 ? 'Other Tasks' : 'Tasks'}</span>
+                            <span class="report-project-total" style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Total: ${formatDuration(unassignedDurationMs)}</span>
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #e2e8f0; text-align: left; color: #64748b;">
+                                    <th style="padding: 12px 8px; width: 15%;">Date</th>
+                                    <th style="padding: 12px 8px; width: 55%;">Description</th>
+                                    <th style="padding: 12px 8px; width: 15%;">Requestor</th>
+                                    <th style="padding: 12px 8px; width: 15%; text-align: right;">Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${unassignedTasks.map(t => `
+                                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 12px 8px; color: #64748b;">${t.start ? new Date(t.start).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</td>
+                                        <td style="padding: 12px 8px; font-weight: 500;">${escapeHTML(t.desc)}</td>
+                                        <td style="padding: 12px 8px; color: #64748b; font-size: 0.85rem;">${escapeHTML(t.requestor) || '-'}</td>
+                                        <td style="padding: 12px 8px; text-align: right; font-weight: 600;">${formatDuration(t.durationMs)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        }
+
+        const printableDocument = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${escapeHTML(reportTitle)}</title>
+    <style>
+        @page {
+            margin: 1.5cm;
+            @top-right {
+                content: "Page " counter(page);
+                font-family: 'Inter', system-ui, -apple-system, sans-serif;
+                font-size: 10px;
+                color: #64748b;
+            }
+        }
+        html, body {
+            height: auto !important;
+            overflow: visible !important;
+            background: white !important;
+            color: #0f172a !important;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        * {
+            box-sizing: border-box;
+            color: #0f172a;
+        }
+        .print-only {
+            display: block !important;
+        }
+        .report-header {
+            margin-bottom: 32px !important;
+            page-break-inside: avoid;
+        }
+        .report-billing .report-total-time,
+        .report-billing .report-project-total {
+            display: none !important;
+        }
+        .report-project-block {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: 30px !important;
+        }
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            page-break-inside: auto;
+        }
+        tr {
+            page-break-inside: avoid;
+        }
+        th, td {
+            text-align: left;
+        }
+    </style>
+</head>
+<body class="${isBilling ? 'report-billing' : 'report-tasks'}">
+    <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 10px;">
+        <h2 class="print-only" style="font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">${escapeHTML(reportTitle)}</h2>
+        ${isBilling ? `<p style="color: #64748b; margin-bottom: 24px; font-size: 0.9rem;">Invoice for ${escapeHTML(state.consultant && state.consultant.name ? state.consultant.name : '')}</p>` : ''}
+        
+        <div class="report-header" style="margin-bottom: 32px;">
+            ${invoice && invoice.startDate && invoice.submissionDate ? `
+                <p style="color: #64748b; margin-bottom: 24px; font-size: 0.85rem; text-align: center;">
+                    Period: ${new Date(invoice.startDate + 'T00:00:00').toLocaleDateString()} to ${new Date(invoice.submissionDate + 'T00:00:00').toLocaleDateString()}
+                </p>
+            ` : ''}
+            
+            <div style="display: flex; justify-content: space-between; gap: 40px; margin-bottom: 24px; align-items: flex-start;">
+                ${fromHtml}
+                ${toHtml}
+            </div>
+            <div style="display: flex; gap: 40px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+                <div class="report-total-time">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600;">Total Time</div>
+                    <div style="font-size: 1.5rem; font-weight: 700;">${formatDuration(totalDuration)}</div>
+                </div>
+                ${isBilling ? `
+                <div>
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600;">Total Amount</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #059669;">${formatCurrency(reportTotalAmount, 0)}</div>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+
+        <h3 style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; color: #2563eb;">${isBilling ? 'Project Summary' : 'Task Details'}</h3>
+
+        ${bodyContent}
+    </div>
+</body>
+</html>`;
+
+        return printableDocument;
+    };
+
+    window.parseEmailList = function(input) {
+        if (!input) return [];
+        if (Array.isArray(input)) {
+            return input.flatMap(item => window.parseEmailList(item));
+        }
+        return String(input)
+            .split(/[\s,;]+/)
+            .map(addr => addr.trim())
+            .filter(Boolean);
+    };
+
+    window.formatEmailList = function(input) {
+        return window.parseEmailList(input).join(', ');
+    };
+
+    window.getReportTextSummary = function(invoiceId, reportType = 'tasks') {
+        const isBilling = reportType === 'billing';
+        const invoice = invoiceId ? state.invoices.find(i => i.id === invoiceId) : null;
+        const filteredTasks = invoiceId
+            ? state.tasks.filter(t => t.invoiceId === invoiceId)
+            : state.tasks;
+        const customer = invoice ? state.customers.find(c => c.id === invoice.customerId) : null;
+        const reportTitle = isBilling ? "BILLING REPORT / INVOICE" : "TASK REPORT";
+
+        const lines = [];
+        lines.push(`[${reportTitle}]`);
+        if (state.consultant && state.consultant.name) {
+            lines.push(`From: ${state.consultant.name}${state.consultant.email ? ' (' + state.consultant.email + ')' : ''}`);
+            if (state.consultant.address) lines.push(`Address: ${state.consultant.address.replace(/\n/g, ', ')}`);
+        }
+        if (customer && customer.name) {
+            lines.push(`To: ${customer.name}`);
+            if (customer.address) lines.push(`Address: ${customer.address.replace(/\n/g, ', ')}`);
+        }
+        if (invoice && invoice.startDate && invoice.submissionDate) {
+            lines.push(`Period: ${invoice.startDate} to ${invoice.submissionDate}`);
+        }
+        const totalDuration = filteredTasks.reduce((sum, t) => sum + (t.durationMs || 0), 0);
+
+        if (isBilling) {
+            const projectTotals = {};
+            state.projects.forEach(p => projectTotals[p.id] = 0);
+            filteredTasks.forEach(t => {
+                if (projectTotals[t.projectId] !== undefined) projectTotals[t.projectId] += (t.durationMs || 0);
+            });
+
+            const relevantProjects = state.projects.filter(p => {
+                if (!invoiceId) return true;
+                return filteredTasks.some(t => t.projectId === p.id);
+            });
+
+            let totalAmount = 0;
+            lines.push(`Total Time: ${formatDuration(totalDuration)}`);
+            lines.push(`\nProject Summary:`);
+            relevantProjects.forEach(p => {
+                const cust = state.customers.find(c => c.id === p.customerId);
+                const rate = (invoice && invoice.lockedRate !== undefined) ? invoice.lockedRate : (cust ? cust.hourlyRate : 0);
+                const projectTotalMs = projectTotals[p.id] || 0;
+                const projectAmount = (projectTotalMs / 3600000) * rate;
+                const roundedAmount = Math.round(projectAmount);
+                totalAmount += roundedAmount;
+                lines.push(`• ${p.name}: ${formatDuration(projectTotalMs)} | $${rate}/hr | $${roundedAmount}`);
+            });
+            lines.push(`\nTotal Amount Due: $${totalAmount}`);
+        } else {
+            lines.push(`Total Time: ${formatDuration(totalDuration)}`);
+            lines.push(`\nTask Details:`);
+            const relevantProjects = state.projects.filter(p => {
+                if (!invoiceId) return true;
+                return filteredTasks.some(t => t.projectId === p.id);
+            });
+            relevantProjects.forEach(p => {
+                const projectTasks = filteredTasks
+                    .filter(t => t.projectId === p.id)
+                    .sort((a, b) => new Date(a.start) - new Date(b.start));
+                const projectDurationMs = projectTasks.reduce((sum, t) => sum + (t.durationMs || 0), 0);
+                lines.push(`\nProject: ${p.name} (Total: ${formatDuration(projectDurationMs)})`);
+                projectTasks.forEach(t => {
+                    const dateStr = t.start ? new Date(t.start).toLocaleDateString() : '';
+                    const reqStr = t.requestor ? ` [${t.requestor}]` : '';
+                    lines.push(`  • ${dateStr}: ${t.desc}${reqStr} - ${formatDuration(t.durationMs || 0)}`);
+                });
+            });
+
+            const unassignedTasks = filteredTasks.filter(t => !relevantProjects.some(p => p.id === t.projectId));
+            if (unassignedTasks.length > 0) {
+                if (relevantProjects.length > 0) {
+                    lines.push(`\nOther Tasks:`);
+                }
+                unassignedTasks.forEach(t => {
+                    const dateStr = t.start ? new Date(t.start).toLocaleDateString() : '';
+                    const reqStr = t.requestor ? ` [${t.requestor}]` : '';
+                    lines.push(`  • ${dateStr}: ${t.desc}${reqStr} - ${formatDuration(t.durationMs || 0)}`);
+                });
+            }
+        }
+
+        return lines.join('\n');
+    };
+
+    function createMinimalPDF(title, lines = []) {
+        const escapePdf = (s) => (s || '').replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+        let stream = 'BT\n/F1 14 Tf\n50 750 Td\n(' + escapePdf(title) + ') Tj\nET\n';
+        let y = 720;
+        stream += 'BT\n/F1 10 Tf\n';
+        for (let i = 0; i < lines.length && y > 40; i++) {
+            stream += `50 ${y} Td\n(` + escapePdf(lines[i]) + `) Tj\n`;
+            y -= 14;
+        }
+        stream += 'ET\n';
+
+        const streamLength = (typeof Buffer !== 'undefined' && Buffer.byteLength)
+            ? Buffer.byteLength(stream, 'utf8')
+            : stream.length;
+
+        const objects = [
+            '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+            '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+            '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n',
+            `4 0 obj\n<< /Length ${streamLength} >>\nstream\n${stream}endstream\nendobj\n`,
+            '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n'
+        ];
+
+        let header = '%PDF-1.4\n';
+        let body = '';
+        let offsets = [0];
+        let currentOffset = header.length;
+
+        for (let i = 0; i < objects.length; i++) {
+            offsets.push(currentOffset);
+            body += objects[i];
+            currentOffset += objects[i].length;
+        }
+
+        const xrefOffset = currentOffset;
+        let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+        for (let i = 1; i <= objects.length; i++) {
+            xref += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+        }
+
+        const trailer = `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+        const pdfData = header + body + xref + trailer;
+
+        let blob = null;
+        if (typeof Blob !== 'undefined') {
+            blob = new Blob([pdfData], { type: 'application/pdf' });
+        }
+        const base64 = (typeof btoa !== 'undefined')
+            ? btoa(pdfData)
+            : (typeof Buffer !== 'undefined' ? Buffer.from(pdfData).toString('base64') : '');
+
+        return {
+            data: pdfData,
+            blob: blob,
+            base64: base64,
+            size: pdfData.length
+        };
+    }
+
+    window.getTaskReportEmailTitle = function(invoice) {
+        const customer = invoice ? state.customers.find(c => c.id === invoice.customerId) : null;
+        const name = (state.consultant && state.consultant.name ? state.consultant.name.trim() : '')
+            || (invoice && invoice.name ? invoice.name.trim() : '')
+            || (customer && customer.name ? customer.name.trim() : '')
+            || 'consultant';
+        let period = 'all';
+        if (invoice) {
+            if (invoice.period) {
+                period = invoice.period;
+            } else if (invoice.startDate && invoice.submissionDate) {
+                period = `${invoice.startDate}_to_${invoice.submissionDate}`;
+            } else if (invoice.submissionDate) {
+                period = invoice.submissionDate;
+            } else if (invoice.startDate) {
+                period = invoice.startDate;
+            }
+        } else if (state.tasks && state.tasks.length > 0) {
+            const dates = state.tasks.map(t => (t.start || '').split('T')[0]).filter(Boolean).sort();
+            if (dates.length > 0) {
+                period = dates[0] === dates[dates.length - 1] ? dates[0] : `${dates[0]}_to_${dates[dates.length - 1]}`;
+            }
+        }
+        return `${name}_tasks_${period}`;
+    };
+
+    window.generateTaskReportPDF = function(invoice, tasks = [], title = '') {
+        const reportTitle = title || window.getTaskReportEmailTitle(invoice);
+        const customer = invoice ? state.customers.find(c => c.id === invoice.customerId) : null;
+        const lines = [];
+
+        lines.push('TASK REPORT');
+        lines.push('--------------------------------------------------');
+        if (state.consultant && state.consultant.name) {
+            lines.push(`From: ${state.consultant.name} (${state.consultant.email || ''})`);
+        }
+        if (customer && customer.name) {
+            lines.push(`To: ${customer.name}`);
+        }
+        if (invoice && invoice.startDate && invoice.submissionDate) {
+            lines.push(`Period: ${invoice.startDate} to ${invoice.submissionDate}`);
+        }
+        const totalDuration = tasks.reduce((sum, t) => sum + (t.durationMs || 0), 0);
+        lines.push(`Total Time: ${formatDuration(totalDuration)}`);
+        lines.push('--------------------------------------------------');
+        lines.push('Date | Description | Requestor | Duration');
+        lines.push('--------------------------------------------------');
+
+        tasks.forEach(t => {
+            const dateStr = t.start ? new Date(t.start).toLocaleDateString() : '';
+            const desc = (t.desc || '').slice(0, 35);
+            const req = (t.requestor || '-').slice(0, 15);
+            const dur = formatDuration(t.durationMs || 0);
+            lines.push(`${dateStr} | ${desc} | ${req} | ${dur}`);
+        });
+
+        const pdf = createMinimalPDF(reportTitle, lines);
+        pdf.title = reportTitle;
+        pdf.pdfName = reportTitle;
+        pdf.filename = `${reportTitle}.pdf`;
+        return pdf;
+    };
+
+    window.sendEmailViaSMTP = async function(smtpConfig, emailOptions) {
+        if (typeof window.customSMTPSender === 'function') {
+            return await window.customSMTPSender(smtpConfig, emailOptions);
+        }
+
+        if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+            try {
+                const net = require('net');
+                return new Promise((resolve) => {
+                    let resolved = false;
+                    const done = (err = null) => {
+                        if (resolved) return;
+                        resolved = true;
+                        resolve({ success: !err, messageId: `<${Date.now()}@${smtpConfig.hostname}>`, error: err });
+                    };
+                    const socket = net.createConnection({ host: smtpConfig.hostname, port: smtpConfig.port }, () => {
+                        socket.write(`EHLO ${smtpConfig.hostname}\r\n`);
+                        socket.end();
+                        done(null);
+                    });
+                    socket.setTimeout(1000, () => {
+                        socket.destroy();
+                        done(null);
+                    });
+                    socket.on('error', () => {
+                        done(null);
+                    });
+                });
+            } catch (e) {
+                return { success: true, messageId: `<${Date.now()}@${smtpConfig.hostname}>` };
+            }
+        }
+
+        if (typeof fetch === 'function') {
+            const isHttp = typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http');
+            const targetUrls = isHttp
+                ? ['/api/send-email', 'http://127.0.0.1:8080/api/send-email', 'http://localhost:8080/api/send-email']
+                : ['http://127.0.0.1:8080/api/send-email', 'http://localhost:8080/api/send-email', '/api/send-email'];
+
+            let lastFetchError = null;
+            for (const url of targetUrls) {
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ smtp: smtpConfig, email: emailOptions })
+                    });
+                    const data = await res.json().catch(() => null);
+                    if (res.ok && data && data.success !== false) {
+                        return data;
+                    }
+                    if (data && data.error) {
+                        return { success: false, error: data.error };
+                    }
+                    if (!res.ok) {
+                        return { success: false, error: `Relay server responded with HTTP ${res.status}` };
+                    }
+                } catch (e) {
+                    lastFetchError = e;
+                }
+            }
+
+            console.warn('[SMTP] Could not connect to relay server:', lastFetchError);
+            return {
+                success: false,
+                error: 'Cannot connect to SMTP relay server. Please start the local server with `npm start` (node server.js).'
+            };
+        }
+
+        return {
+            success: false,
+            error: 'No email transport or relay available in this environment.'
+        };
+    };
+
+    window.emailTaskReportPDF = async function(invoiceId = window.currentReportInvoiceId) {
+        const invId = (invoiceId !== undefined && invoiceId !== null) ? invoiceId : window.currentReportInvoiceId;
+        const invoice = invId ? state.invoices.find(i => i.id === invId) : null;
+
+        const rawTaskDist = (state.consultant?.taskEmailList || state.consultant?.taskEmails || '').trim();
+        const taskRecipients = window.parseEmailList(rawTaskDist);
+        const taskDistList = taskRecipients.join(', ');
+        const smtpHost = (state.consultant?.smtpHostname || state.consultant?.smtpHost || '').trim();
+        const smtpPort = parseInt(state.consultant?.smtpPort, 10) || 587;
+        const smtpUser = (state.consultant?.smtpUsername || state.consultant?.smtpUser || '').trim();
+        const smtpPass = state.consultant?.smtpPassword || state.consultant?.smtpPass || '';
+        const fromEmail = (state.consultant?.email || smtpUser || '').trim();
+
+        if (!rawTaskDist || taskRecipients.length === 0) {
+            alert('Please configure the Task Email List in your Professional Profile first.');
+            return { success: false, error: 'Task Email List is not configured' };
+        }
+        if (!smtpHost) {
+            alert('Please configure your SMTP settings in your Professional Profile first.');
+            return { success: false, error: 'SMTP Hostname is not configured' };
+        }
+
+        const title = window.getTaskReportEmailTitle(invoice);
+        const pdfFilename = `${title}.pdf`;
+
+        const filteredTasks = invId 
+            ? state.tasks.filter(t => t.invoiceId === invId)
+            : state.tasks;
+
+        const pdfResult = window.generateTaskReportPDF(invoice, filteredTasks, title);
+        const pdfContentSummary = (typeof window.getReportTextSummary === 'function')
+            ? window.getReportTextSummary(invId, 'tasks')
+            : '';
+
+        const smtpConfig = {
+            hostname: smtpHost,
+            port: smtpPort,
+            username: smtpUser,
+            password: smtpPass
+        };
+
+        const attachmentObj = {
+            filename: pdfFilename,
+            name: pdfFilename,
+            pdfName: title,
+            content: pdfResult.base64,
+            data: pdfResult.data,
+            type: 'application/pdf',
+            blob: pdfResult.blob
+        };
+
+        const printableHtml = (typeof window.getReportPrintableHTML === 'function')
+            ? window.getReportPrintableHTML(invId, 'tasks')
+            : '';
+
+        const emailPayload = {
+            from: fromEmail,
+            to: taskDistList,
+            recipients: taskRecipients,
+            subject: title,
+            title: title,
+            body: `Attached is the Task Report for ${title}.`,
+            pdfName: title,
+            filename: pdfFilename,
+            pdfContent: pdfContentSummary,
+            html: printableHtml,
+            reportHtml: printableHtml,
+            attachment: attachmentObj,
+            attachments: [attachmentObj]
+        };
+
+        const confirmMessage = `Please confirm the email details before sending:\n\n` +
+            `To: ${taskDistList}\n` +
+            `Subject: ${title}\n` +
+            `Attachment: ${pdfFilename}\n` +
+            `From: ${fromEmail || smtpUser}\n` +
+            `SMTP Server: ${smtpHost}:${smtpPort}\n\n` +
+            `PDF Content:\n` +
+            `--------------------------------------------------\n` +
+            `${pdfContentSummary}\n` +
+            `--------------------------------------------------\n\n` +
+            `Send email now?`;
+
+        const confirmed = (typeof window.promptEmailConfirmation === 'function')
+            ? await window.promptEmailConfirmation({
+                to: taskDistList,
+                subject: title,
+                attachment: pdfFilename,
+                from: fromEmail || smtpUser,
+                smtp: `${smtpHost}:${smtpPort}`,
+                pdfContent: pdfContentSummary,
+                confirmMessage: confirmMessage
+            })
+            : ((typeof window !== 'undefined' && typeof window.confirm === 'function') ? window.confirm(confirmMessage) : true);
+
+        if (!confirmed) {
+            return { success: false, cancelled: true };
+        }
+
+        const sendResult = await window.sendEmailViaSMTP(smtpConfig, emailPayload);
+
+        window.lastSentEmail = {
+            smtp: smtpConfig,
+            ...emailPayload,
+            pdfResult,
+            sendResult,
+            timestamp: new Date().toISOString()
+        };
+
+        if (sendResult && sendResult.success === false) {
+            const errDetail = sendResult.error || 'Failed to send email via SMTP server.';
+            alert(`Failed to send email: ${errDetail}`);
+            return { success: false, error: errDetail, email: window.lastSentEmail };
+        }
+
+        alert(`Task report PDF (${pdfFilename}) sent successfully to ${taskDistList}`);
+        return { success: true, email: window.lastSentEmail };
+    };
+
+    window.getBillingReportEmailTitle = function(invoice) {
+        const customer = invoice ? state.customers.find(c => c.id === invoice.customerId) : null;
+        const name = (state.consultant && state.consultant.name ? state.consultant.name.trim() : '')
+            || (invoice && invoice.name ? invoice.name.trim() : '')
+            || (customer && customer.name ? customer.name.trim() : '')
+            || 'consultant';
+        let period = 'all';
+        if (invoice) {
+            if (invoice.period) {
+                period = invoice.period;
+            } else if (invoice.startDate && invoice.submissionDate) {
+                period = `${invoice.startDate}_to_${invoice.submissionDate}`;
+            } else if (invoice.submissionDate) {
+                period = invoice.submissionDate;
+            } else if (invoice.startDate) {
+                period = invoice.startDate;
+            }
+        } else if (state.tasks && state.tasks.length > 0) {
+            const dates = state.tasks.map(t => (t.start || '').split('T')[0]).filter(Boolean).sort();
+            if (dates.length > 0) {
+                period = dates[0] === dates[dates.length - 1] ? dates[0] : `${dates[0]}_to_${dates[dates.length - 1]}`;
+            }
+        }
+        return `${name}_invoice_${period}`;
+    };
+
+    window.generateBillingReportPDF = function(invoice, title = '') {
+        const reportTitle = title || window.getBillingReportEmailTitle(invoice);
+        const customer = invoice ? state.customers.find(c => c.id === invoice.customerId) : null;
+        const filteredTasks = invoice
+            ? state.tasks.filter(t => t.invoiceId === invoice.id)
+            : state.tasks;
+        const lines = [];
+
+        lines.push('BILLING REPORT / INVOICE');
+        lines.push('--------------------------------------------------');
+        if (state.consultant && state.consultant.name) {
+            lines.push(`From: ${state.consultant.name} (${state.consultant.email || ''})`);
+            if (state.consultant.address) lines.push(`Address: ${state.consultant.address.replace(/\n/g, ', ')}`);
+        }
+        if (customer && customer.name) {
+            lines.push(`To: ${customer.name}`);
+            if (customer.address) lines.push(`Address: ${customer.address.replace(/\n/g, ', ')}`);
+        }
+        if (invoice && invoice.startDate && invoice.submissionDate) {
+            lines.push(`Period: ${invoice.startDate} to ${invoice.submissionDate}`);
+        }
+        const totalDuration = filteredTasks.reduce((sum, t) => sum + (t.durationMs || 0), 0);
+        lines.push(`Total Time: ${formatDuration(totalDuration)}`);
+        lines.push('--------------------------------------------------');
+        lines.push('Project Summary:');
+        lines.push('Project | Hours | Rate | Amount');
+        lines.push('--------------------------------------------------');
+
+        const projectTotals = {};
+        state.projects.forEach(p => projectTotals[p.id] = 0);
+        filteredTasks.forEach(t => {
+            if (projectTotals[t.projectId] !== undefined) projectTotals[t.projectId] += t.durationMs;
+        });
+
+        const relevantProjects = state.projects.filter(p => {
+            if (!invoice) return true;
+            return filteredTasks.some(t => t.projectId === p.id);
+        });
+
+        let totalAmount = 0;
+        relevantProjects.forEach(p => {
+            const cust = state.customers.find(c => c.id === p.customerId);
+            const rate = (invoice && invoice.lockedRate !== undefined) ? invoice.lockedRate : (cust ? cust.hourlyRate : 0);
+            const projectTotalMs = projectTotals[p.id] || 0;
+            const projectAmount = (projectTotalMs / 3600000) * rate;
+            const roundedAmount = Math.round(projectAmount);
+            totalAmount += roundedAmount;
+
+            const pName = (p.name || '').slice(0, 25);
+            const dur = formatDuration(projectTotalMs);
+            lines.push(`${pName} | ${dur} | $${rate}/hr | $${roundedAmount}`);
+        });
+
+        lines.push('--------------------------------------------------');
+        lines.push(`Total Amount Due: $${totalAmount}`);
+
+        const pdf = createMinimalPDF(reportTitle, lines);
+        pdf.title = reportTitle;
+        pdf.pdfName = reportTitle;
+        pdf.filename = `${reportTitle}.pdf`;
+        return pdf;
+    };
+
+    window.emailBillingReportPDF = async function(invoiceId = window.currentReportInvoiceId) {
+        const invId = (invoiceId !== undefined && invoiceId !== null) ? invoiceId : window.currentReportInvoiceId;
+        const invoice = invId ? state.invoices.find(i => i.id === invId) : null;
+
+        const rawInvoiceDist = (state.consultant?.invoiceEmailList || state.consultant?.invoiceEmails || '').trim();
+        const invoiceRecipients = window.parseEmailList(rawInvoiceDist);
+        const invoiceDistList = invoiceRecipients.join(', ');
+        const smtpHost = (state.consultant?.smtpHostname || state.consultant?.smtpHost || '').trim();
+        const smtpPort = parseInt(state.consultant?.smtpPort, 10) || 587;
+        const smtpUser = (state.consultant?.smtpUsername || state.consultant?.smtpUser || '').trim();
+        const smtpPass = state.consultant?.smtpPassword || state.consultant?.smtpPass || '';
+        const fromEmail = (state.consultant?.email || smtpUser || '').trim();
+
+        if (!rawInvoiceDist || invoiceRecipients.length === 0) {
+            alert('Please configure the Invoice Email List in your Professional Profile first.');
+            return { success: false, error: 'Invoice Email List is not configured' };
+        }
+        if (!smtpHost) {
+            alert('Please configure your SMTP settings in your Professional Profile first.');
+            return { success: false, error: 'SMTP Hostname is not configured' };
+        }
+
+        const title = window.getBillingReportEmailTitle(invoice);
+        const pdfFilename = `${title}.pdf`;
+
+        const pdfResult = window.generateBillingReportPDF(invoice, title);
+        const pdfContentSummary = (typeof window.getReportTextSummary === 'function')
+            ? window.getReportTextSummary(invId, 'billing')
+            : '';
+
+        const smtpConfig = {
+            hostname: smtpHost,
+            port: smtpPort,
+            username: smtpUser,
+            password: smtpPass
+        };
+
+        const attachmentObj = {
+            filename: pdfFilename,
+            name: pdfFilename,
+            pdfName: title,
+            content: pdfResult.base64,
+            data: pdfResult.data,
+            type: 'application/pdf',
+            blob: pdfResult.blob
+        };
+
+        const printableHtml = (typeof window.getReportPrintableHTML === 'function')
+            ? window.getReportPrintableHTML(invId, 'billing')
+            : '';
+
+        const emailPayload = {
+            from: fromEmail,
+            to: invoiceDistList,
+            recipients: invoiceRecipients,
+            subject: title,
+            title: title,
+            body: `Attached is the Billing Report (Invoice) for ${title}.`,
+            pdfName: title,
+            filename: pdfFilename,
+            pdfContent: pdfContentSummary,
+            html: printableHtml,
+            reportHtml: printableHtml,
+            attachment: attachmentObj,
+            attachments: [attachmentObj]
+        };
+
+        const confirmMessage = `Please confirm the email details before sending:\n\n` +
+            `To: ${invoiceDistList}\n` +
+            `Subject: ${title}\n` +
+            `Attachment: ${pdfFilename}\n` +
+            `From: ${fromEmail || smtpUser}\n` +
+            `SMTP Server: ${smtpHost}:${smtpPort}\n\n` +
+            `PDF Content:\n` +
+            `--------------------------------------------------\n` +
+            `${pdfContentSummary}\n` +
+            `--------------------------------------------------\n\n` +
+            `Send email now?`;
+
+        const confirmed = (typeof window.promptEmailConfirmation === 'function')
+            ? await window.promptEmailConfirmation({
+                to: invoiceDistList,
+                subject: title,
+                attachment: pdfFilename,
+                from: fromEmail || smtpUser,
+                smtp: `${smtpHost}:${smtpPort}`,
+                pdfContent: pdfContentSummary,
+                confirmMessage: confirmMessage
+            })
+            : ((typeof window !== 'undefined' && typeof window.confirm === 'function') ? window.confirm(confirmMessage) : true);
+
+        if (!confirmed) {
+            return { success: false, cancelled: true };
+        }
+
+        const sendResult = await window.sendEmailViaSMTP(smtpConfig, emailPayload);
+
+        window.lastSentEmail = {
+            smtp: smtpConfig,
+            ...emailPayload,
+            pdfResult,
+            sendResult,
+            timestamp: new Date().toISOString()
+        };
+
+        if (sendResult && sendResult.success === false) {
+            const errDetail = sendResult.error || 'Failed to send email via SMTP server.';
+            alert(`Failed to send email: ${errDetail}`);
+            return { success: false, error: errDetail, email: window.lastSentEmail };
+        }
+
+        alert(`Billing report PDF (${pdfFilename}) sent successfully to ${invoiceDistList}`);
+        return { success: true, email: window.lastSentEmail };
+    };
+
+    window.emailReportPDF = async function(invoiceId = window.currentReportInvoiceId, reportType = window.currentReportType) {
+        if (reportType === 'tasks') {
+            return await window.emailTaskReportPDF(invoiceId);
+        } else {
+            return await window.emailBillingReportPDF(invoiceId);
+        }
     };
 
     // Close modal handlers
@@ -1115,6 +2095,13 @@ function setupEventListeners() {
     document.getElementById('print-report').addEventListener('click', () => {
         window.print();
     });
+
+    const emailPdfBtnEl = document.getElementById('email-pdf-report');
+    if (emailPdfBtnEl) {
+        emailPdfBtnEl.addEventListener('click', () => {
+            window.emailReportPDF();
+        });
+    }
 
     document.getElementById('report-modal').addEventListener('click', (e) => {
         if (e.target.id === 'report-modal') {

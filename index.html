@@ -569,12 +569,59 @@
             <div class="modal-header">
                 <h2 id="report-title">Time Tracking Report</h2>
                 <div style="display: flex; gap: 12px; align-items: center;">
+                    <button id="email-pdf-report" class="btn-action-outline">Email PDF</button>
                     <button id="print-report" class="btn-action-outline">Print</button>
                     <button id="close-modal" class="btn-close" aria-label="Close modal">&times;</button>
                 </div>
             </div>
             <div class="modal-body" id="report-content">
                 <!-- Report injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Confirmation Modal -->
+    <div id="email-confirm-modal" class="modal hidden" style="z-index: 1100;">
+        <div class="modal-content email-confirm-modal-content">
+            <div class="modal-header">
+                <h2>Confirm Email & Report Details</h2>
+                <button id="close-email-confirm" class="btn-close" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body email-confirm-modal-body">
+                <div class="email-confirm-summary-grid">
+                    <div class="email-confirm-field">
+                        <span class="email-confirm-label">To:</span>
+                        <span id="email-confirm-to" class="email-confirm-value"></span>
+                    </div>
+                    <div class="email-confirm-field">
+                        <span class="email-confirm-label">Subject:</span>
+                        <span id="email-confirm-subject" class="email-confirm-value" style="font-weight: 600;"></span>
+                    </div>
+                    <div class="email-confirm-field">
+                        <span class="email-confirm-label">Attachment:</span>
+                        <span id="email-confirm-attachment" class="email-confirm-value email-badge"></span>
+                    </div>
+                    <div class="email-confirm-field">
+                        <span class="email-confirm-label">From:</span>
+                        <span id="email-confirm-from" class="email-confirm-value"></span>
+                    </div>
+                    <div class="email-confirm-field">
+                        <span class="email-confirm-label">SMTP Server:</span>
+                        <span id="email-confirm-smtp" class="email-confirm-value"></span>
+                    </div>
+                </div>
+
+                <div class="email-confirm-preview-section">
+                    <div class="email-confirm-preview-header">
+                        <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">Report Details (PDF Content Preview)</span>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">Attached PDF contains identical content</span>
+                    </div>
+                    <pre id="email-confirm-preview-content" class="email-confirm-preview-pre"></pre>
+                </div>
+            </div>
+            <div class="modal-footer email-confirm-footer">
+                <button type="button" id="cancel-email-confirm" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="send-email-confirm" class="btn btn-primary">Send Email</button>
             </div>
         </div>
     </div>

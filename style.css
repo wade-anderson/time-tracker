@@ -600,6 +600,106 @@ input:focus, select:focus, textarea:focus {
     transform: translateY(-1px);
 }
 
+/* Email Confirmation Modal - Large viewport-friendly layout */
+.email-confirm-modal-content {
+    max-width: 1000px;
+    width: 94vw;
+    max-height: 92vh;
+    min-height: 560px;
+    display: flex;
+    flex-direction: column;
+}
+
+.email-confirm-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.email-confirm-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px 24px;
+    background-color: var(--bg-color);
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.email-confirm-field {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.email-confirm-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 80px;
+}
+
+.email-confirm-value {
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.email-badge {
+    display: inline-block;
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid #bfdbfe;
+}
+
+.email-confirm-preview-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+}
+
+.email-confirm-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2px;
+}
+
+.email-confirm-preview-pre {
+    margin: 0;
+    padding: 20px 24px;
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #0f172a;
+    white-space: pre-wrap;
+    word-break: break-word;
+    flex: 1;
+    min-height: 320px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.email-confirm-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+}
+
 /* Print Styles - Simplified for maximum reliability */
 @media print {
     @page {
@@ -661,7 +761,7 @@ input:focus, select:focus, textarea:focus {
     }
 
     /* Hide modal UI elements */
-    .modal-header h2, .btn-close, .modal-footer, #print-report, .report-billing .report-total-time, .report-billing .report-project-total {
+    .modal-header h2, .btn-close, .modal-footer, #print-report, #email-pdf-report, .report-billing .report-total-time, .report-billing .report-project-total {
         display: none !important;
     }
 

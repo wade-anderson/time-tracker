@@ -7,7 +7,8 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "test": "node tests/run_all.js"
   },
   "repository": {
     "type": "git",
@@ -23,6 +24,7 @@
   "homepage": "https://github.com/wade-anderson/test1#readme",
   "dependencies": {
     "fake-indexeddb": "^6.2.5",
-    "jsdom": "^29.0.0"
+    "jsdom": "^29.0.0",
+    "nodemailer": "^10.1.2"
   }
 }
