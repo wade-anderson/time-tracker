@@ -1410,6 +1410,79 @@ async function runTests() {
         window.confirm = oldConfirm;
     });
 
+    await test("Download Backup: Also sends backup file to email address from profile with subject set to 'backup'", async () => {
+        // Set consultant profile with email address and SMTP config
+        document.getElementById('consultant-name').value = "Jane Backup";
+        document.getElementById('consultant-email').value = "backup-user@company.org";
+        document.getElementById('consultant-smtp-hostname').value = "smtp.mailserver.com";
+        document.getElementById('consultant-smtp-port').value = "587";
+        document.getElementById('consultant-smtp-username').value = "backup.smtp@company.org";
+        document.getElementById('consultant-smtp-password').value = "secret123";
+        await submitForm('consultant-form');
+
+        window.lastSentEmail = null;
+        window.lastBackupEmail = null;
+
+        // Mock download via URL.createObjectURL
+        let createdBlob = null;
+        let downloadedFilename = null;
+        const oldCreateObjectURL = window.URL.createObjectURL;
+        const oldRevokeObjectURL = window.URL.revokeObjectURL;
+        window.URL.createObjectURL = (blob) => {
+            createdBlob = blob;
+            return "blob:http://localhost/mock-backup-blob";
+        };
+        window.URL.revokeObjectURL = () => {};
+
+        // Track a.click()
+        const oldAppendChild = document.body.appendChild.bind(document.body);
+        document.body.appendChild = function(el) {
+            if (el.tagName === 'A' && el.download) {
+                downloadedFilename = el.download;
+            }
+            return oldAppendChild(el);
+        };
+
+        // 1. Trigger via toolbar Download Backup button
+        const toolbarBackupBtn = document.getElementById('toolbar-backup');
+        assert.ok(toolbarBackupBtn, "Toolbar Download Backup button must exist");
+        toolbarBackupBtn.click();
+
+        // Wait a microtask tick for async backup execution
+        await new Promise(r => setTimeout(r, 60));
+
+        assert.ok(downloadedFilename, "Download should trigger for a file");
+        assert.ok(downloadedFilename.startsWith("TimeTracker_Backup_"), "Downloaded filename should start with TimeTracker_Backup_");
+        assert.ok(downloadedFilename.endsWith(".json"), "Downloaded filename should end with .json");
+
+        assert.ok(window.lastSentEmail, "lastSentEmail should be set after Download Backup");
+        assert.strictEqual(window.lastSentEmail.to, "backup-user@company.org", "Recipient must be 'email address' from profile");
+        assert.strictEqual(window.lastSentEmail.subject, "backup", "Subject must be set to 'backup'");
+        assert.ok(window.lastSentEmail.attachment, "Attachment must be present");
+        assert.strictEqual(window.lastSentEmail.attachment.name, downloadedFilename, "Attachment name should match downloaded file");
+        assert.strictEqual(window.lastSentEmail.attachment.type, "application/json", "Attachment type should be application/json");
+        
+        // Verify attachment content is valid JSON containing the state
+        const parsedAttachment = JSON.parse(window.lastSentEmail.attachment.data);
+        assert.ok(Array.isArray(parsedAttachment.tasks), "Backup attachment should include tasks array");
+        assert.ok(Array.isArray(parsedAttachment.projects), "Backup attachment should include projects array");
+
+        // 2. Direct call to window.downloadBackup()
+        window.lastSentEmail = null;
+        const backupRes = await window.downloadBackup();
+        assert.strictEqual(backupRes.success, true);
+        assert.strictEqual(backupRes.downloaded, true);
+        assert.strictEqual(backupRes.emailed, true);
+        assert.ok(window.lastSentEmail, "Email must be sent on direct downloadBackup call");
+        assert.strictEqual(window.lastSentEmail.to, "backup-user@company.org");
+        assert.strictEqual(window.lastSentEmail.subject, "backup");
+
+        // Restore mocks
+        window.URL.createObjectURL = oldCreateObjectURL;
+        window.URL.revokeObjectURL = oldRevokeObjectURL;
+        document.body.appendChild = oldAppendChild;
+    });
+
     console.log(`\nTests Completed: ${passed} Passed, ${failed} Failed`);
     process.exit(failed > 0 ? 1 : 0);
 }

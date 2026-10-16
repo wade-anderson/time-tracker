@@ -2143,7 +2143,7 @@ function setupEventListeners() {
         return exportState;
     };
 
-    window.downloadBackup = function() {
+    window.downloadBackup = async function() {
         const exportData = window.getExportData();
         const dataStr = JSON.stringify(exportData, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
@@ -2152,11 +2152,88 @@ function setupEventListeners() {
         const a = document.createElement('a');
         a.href = url;
         const dateStr = new Date().toISOString().split('T')[0];
-        a.download = `TimeTracker_Backup_${dateStr}.json`;
+        const filename = `TimeTracker_Backup_${dateStr}.json`;
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+
+        // Also send backup file to "email address" from profile with subject "backup"
+        let emailResult = null;
+        const profileEmail = (state.consultant && (state.consultant.email || state.consultant.consultantEmail)
+            ? (state.consultant.email || state.consultant.consultantEmail).trim()
+            : '');
+        const smtpHost = (state.consultant?.smtpHostname || state.consultant?.smtpHost || state.consultant?.hostname || '').trim();
+        const smtpPort = parseInt(state.consultant?.smtpPort || state.consultant?.port, 10) || 587;
+        const smtpUser = (state.consultant?.smtpUsername || state.consultant?.smtpUser || state.consultant?.username || '').trim();
+        const smtpPass = state.consultant?.smtpPassword || state.consultant?.smtpPass || state.consultant?.password || '';
+
+        if (profileEmail && smtpHost) {
+            const recipients = (typeof window.parseEmailList === 'function')
+                ? window.parseEmailList(profileEmail)
+                : [profileEmail];
+
+            const smtpConfig = {
+                hostname: smtpHost,
+                port: smtpPort,
+                username: smtpUser,
+                password: smtpPass
+            };
+
+            const base64Data = (typeof Buffer !== 'undefined')
+                ? Buffer.from(dataStr, 'utf8').toString('base64')
+                : (typeof btoa !== 'undefined' ? btoa(unescape(encodeURIComponent(dataStr))) : '');
+
+            const attachmentObj = {
+                filename: filename,
+                name: filename,
+                data: dataStr,
+                content: base64Data,
+                type: 'application/json'
+            };
+
+            const emailPayload = {
+                from: profileEmail || smtpUser,
+                to: profileEmail,
+                recipients: recipients,
+                subject: 'backup',
+                title: 'backup',
+                body: `Attached is your TimeTracker backup (${filename}).`,
+                filename: filename,
+                attachment: attachmentObj,
+                attachments: [attachmentObj]
+            };
+
+            try {
+                const sendResult = await window.sendEmailViaSMTP(smtpConfig, emailPayload);
+                emailResult = {
+                    success: sendResult && sendResult.success !== false,
+                    smtp: smtpConfig,
+                    ...emailPayload,
+                    sendResult,
+                    timestamp: new Date().toISOString()
+                };
+                window.lastSentEmail = emailResult;
+                window.lastBackupEmail = emailResult;
+                console.log(`[Backup Email] Backup file (${filename}) sent to ${profileEmail}`);
+            } catch (err) {
+                console.warn(`[Backup Email] Failed to send backup email:`, err);
+                emailResult = {
+                    success: false,
+                    error: err.message,
+                    timestamp: new Date().toISOString()
+                };
+            }
+        }
+
+        return {
+            success: true,
+            downloaded: true,
+            filename: filename,
+            emailed: !!(emailResult && emailResult.success),
+            email: emailResult
+        };
     };
 
     // Data Management
