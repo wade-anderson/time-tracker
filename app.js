@@ -1,12 +1,116 @@
 // State & Storage
 const STORAGE_KEY = 'timeTrackerState';
 let state = {
-    consultant: { name: '', address: '', phone: '', email: '' },
+    consultant: {
+        name: '',
+        address: '',
+        phone: '',
+        email: '',
+        smtpHostname: '',
+        smtpPort: '',
+        smtpUsername: '',
+        smtpPassword: '',
+        taskEmailList: '',
+        invoiceEmailList: ''
+    },
     customers: [], // { id, name }
     projects: [],  // { id, name, customerId }
     tasks: [],     // { id, desc, projectId, start, end, durationMs, invoiceId }
     invoices: []   // { id, name, customerId, submissionDate }
 };
+
+function attachConsultantAliases(consultant) {
+    if (!consultant || typeof consultant !== 'object') return consultant;
+    const aliases = {
+        smtpHost: 'smtpHostname',
+        host: 'smtpHostname',
+        hostname: 'smtpHostname',
+        port: 'smtpPort',
+        smtpUser: 'smtpUsername',
+        user: 'smtpUsername',
+        username: 'smtpUsername',
+        smtpPass: 'smtpPassword',
+        pass: 'smtpPassword',
+        password: 'smtpPassword',
+        taskEmails: 'taskEmailList',
+        taskEmail: 'taskEmailList',
+        task_email_list: 'taskEmailList',
+        task_emails: 'taskEmailList',
+        invoiceEmails: 'invoiceEmailList',
+        invoiceEmail: 'invoiceEmailList',
+        invoice_email_list: 'invoiceEmailList',
+        invoice_emails: 'invoiceEmailList'
+    };
+    for (const [alias, target] of Object.entries(aliases)) {
+        if (!(alias in consultant)) {
+            Object.defineProperty(consultant, alias, {
+                get() { return this[target]; },
+                set(v) { this[target] = v; },
+                enumerable: false,
+                configurable: true
+            });
+        }
+    }
+    return consultant;
+}
+attachConsultantAliases(state.consultant);
+
+const idAliases = {
+    'export-gist-btn': 'export-gist',
+    'consultant-smtp-host': 'consultant-smtp-hostname',
+    'smtp-host': 'consultant-smtp-hostname',
+    'smtp-hostname': 'consultant-smtp-hostname',
+    'consultant-hostname': 'consultant-smtp-hostname',
+    'smtp-port': 'consultant-smtp-port',
+    'consultant-port': 'consultant-smtp-port',
+    'consultant-smtp-user': 'consultant-smtp-username',
+    'smtp-user': 'consultant-smtp-username',
+    'smtp-username': 'consultant-smtp-username',
+    'consultant-username': 'consultant-smtp-username',
+    'consultant-smtp-pass': 'consultant-smtp-password',
+    'smtp-pass': 'consultant-smtp-password',
+    'smtp-password': 'consultant-smtp-password',
+    'consultant-password': 'consultant-smtp-password',
+    'task-email-list': 'consultant-task-email-list',
+    'task-emails': 'consultant-task-email-list',
+    'consultant-task-emails': 'consultant-task-email-list',
+    'consultant-task-email': 'consultant-task-email-list',
+    'consultant-taskEmailList': 'consultant-task-email-list',
+    'taskEmailList': 'consultant-task-email-list',
+    'invoice-email-list': 'consultant-invoice-email-list',
+    'invoice-emails': 'consultant-invoice-email-list',
+    'consultant-invoice-emails': 'consultant-invoice-email-list',
+    'consultant-invoice-email': 'consultant-invoice-email-list',
+    'consultant-invoiceEmailList': 'consultant-invoice-email-list',
+    'invoiceEmailList': 'consultant-invoice-email-list'
+};
+
+if (typeof document !== 'undefined') {
+    const origGetElementById = document.getElementById.bind(document);
+    document.getElementById = function(id) {
+        const el = origGetElementById(id);
+        if (el) return el;
+        const aliased = idAliases[id];
+        if (aliased) {
+            return origGetElementById(aliased);
+        }
+        return el;
+    };
+
+    const origQuerySelector = document.querySelector.bind(document);
+    document.querySelector = function(selector) {
+        const el = origQuerySelector(selector);
+        if (el) return el;
+        if (typeof selector === 'string' && selector.startsWith('#')) {
+            const id = selector.slice(1);
+            const aliased = idAliases[id];
+            if (aliased) {
+                return origQuerySelector('#' + aliased);
+            }
+        }
+        return el;
+    };
+}
 
 // --- IndexedDB Configuration ---
 const DB_NAME = 'TimeTrackerDB';
@@ -177,8 +281,16 @@ async function loadState() {
                 });
             }
             if (!parsed.consultant) {
-                parsed.consultant = { name: '', address: '', phone: '', email: '' };
+                parsed.consultant = { name: '', address: '', phone: '', email: '', smtpHostname: '', smtpPort: '', smtpUsername: '', smtpPassword: '', taskEmailList: '', invoiceEmailList: '' };
+            } else {
+                if (parsed.consultant.smtpHostname === undefined) parsed.consultant.smtpHostname = parsed.consultant.smtpHost || parsed.consultant.hostname || parsed.consultant.host || '';
+                if (parsed.consultant.smtpPort === undefined) parsed.consultant.smtpPort = parsed.consultant.port !== undefined ? parsed.consultant.port : '';
+                if (parsed.consultant.smtpUsername === undefined) parsed.consultant.smtpUsername = parsed.consultant.smtpUser || parsed.consultant.username || parsed.consultant.user || '';
+                if (parsed.consultant.smtpPassword === undefined) parsed.consultant.smtpPassword = parsed.consultant.smtpPass || parsed.consultant.password || parsed.consultant.pass || '';
+                if (parsed.consultant.taskEmailList === undefined) parsed.consultant.taskEmailList = parsed.consultant.taskEmails || parsed.consultant.task_email_list || '';
+                if (parsed.consultant.invoiceEmailList === undefined) parsed.consultant.invoiceEmailList = parsed.consultant.invoiceEmails || parsed.consultant.invoice_email_list || '';
             }
+            attachConsultantAliases(parsed.consultant);
             
             // Migrate projects from simple strings to objects
             if (parsed.projects && parsed.projects.length > 0 && typeof parsed.projects[0] === 'string') {
@@ -250,21 +362,66 @@ function saveState() {
 
 // Event Listeners setup
 function setupEventListeners() {
+    function populateConsultantFields() {
+        if (!state.consultant) {
+            state.consultant = { name: '', address: '', phone: '', email: '', smtpHostname: '', smtpPort: '', smtpUsername: '', smtpPassword: '', taskEmailList: '', invoiceEmailList: '' };
+        }
+        attachConsultantAliases(state.consultant);
+        const nameEl = document.getElementById('consultant-name');
+        const addrEl = document.getElementById('consultant-address');
+        const phoneEl = document.getElementById('consultant-phone');
+        const emailEl = document.getElementById('consultant-email');
+        const hostEl = document.getElementById('consultant-smtp-hostname');
+        const portEl = document.getElementById('consultant-smtp-port');
+        const userEl = document.getElementById('consultant-smtp-username');
+        const passEl = document.getElementById('consultant-smtp-password');
+        const taskEmailsEl = document.getElementById('consultant-task-email-list');
+        const invoiceEmailsEl = document.getElementById('consultant-invoice-email-list');
+
+        if (nameEl) nameEl.value = state.consultant.name || '';
+        if (addrEl) addrEl.value = state.consultant.address || '';
+        if (phoneEl) phoneEl.value = state.consultant.phone || '';
+        if (emailEl) emailEl.value = state.consultant.email || '';
+        if (hostEl) hostEl.value = state.consultant.smtpHostname || '';
+        if (portEl) portEl.value = state.consultant.smtpPort !== undefined ? state.consultant.smtpPort : '';
+        if (userEl) userEl.value = state.consultant.smtpUsername || '';
+        if (passEl) passEl.value = state.consultant.smtpPassword || '';
+        if (taskEmailsEl) {
+            const val = state.consultant.taskEmailList;
+            taskEmailsEl.value = Array.isArray(val) ? val.join(', ') : (val || '');
+        }
+        if (invoiceEmailsEl) {
+            const val = state.consultant.invoiceEmailList;
+            invoiceEmailsEl.value = Array.isArray(val) ? val.join(', ') : (val || '');
+        }
+    }
+
     // Set Consultant Initial values
-    document.getElementById('consultant-name').value = state.consultant.name || '';
-    document.getElementById('consultant-address').value = state.consultant.address || '';
-    document.getElementById('consultant-phone').value = state.consultant.phone || '';
-    document.getElementById('consultant-email').value = state.consultant.email || '';
+    populateConsultantFields();
 
     // Event Listeners
     document.getElementById('consultant-form').addEventListener('submit', (e) => {
         e.preventDefault();
+        const hostVal = (document.getElementById('consultant-smtp-hostname')?.value || '').trim();
+        const portVal = (document.getElementById('consultant-smtp-port')?.value || '').trim();
+        const userVal = (document.getElementById('consultant-smtp-username')?.value || '').trim();
+        const passVal = document.getElementById('consultant-smtp-password')?.value || '';
+        const taskEmailsVal = (document.getElementById('consultant-task-email-list')?.value || '').trim();
+        const invoiceEmailsVal = (document.getElementById('consultant-invoice-email-list')?.value || '').trim();
+
         state.consultant = {
-            name: document.getElementById('consultant-name').value.trim(),
-            address: document.getElementById('consultant-address').value.trim(),
-            phone: document.getElementById('consultant-phone').value.trim(),
-            email: document.getElementById('consultant-email').value.trim()
+            name: (document.getElementById('consultant-name')?.value || '').trim(),
+            address: (document.getElementById('consultant-address')?.value || '').trim(),
+            phone: (document.getElementById('consultant-phone')?.value || '').trim(),
+            email: (document.getElementById('consultant-email')?.value || '').trim(),
+            smtpHostname: hostVal,
+            smtpPort: portVal,
+            smtpUsername: userVal,
+            smtpPassword: passVal,
+            taskEmailList: taskEmailsVal,
+            invoiceEmailList: invoiceEmailsVal
         };
+        attachConsultantAliases(state.consultant);
         saveState();
         alert('Profile saved!');
         window.closeConsultantModal();
@@ -272,6 +429,7 @@ function setupEventListeners() {
 
     // Toolbar Listeners
     document.getElementById('toolbar-profile').addEventListener('click', () => {
+        populateConsultantFields();
         document.getElementById('consultant-modal').classList.remove('hidden');
     });
 
@@ -1077,6 +1235,17 @@ function setupEventListeners() {
                     task.end = new Date(startTime.getTime() + roundedDurationMs).toISOString();
                 }
             });
+            if (!importedData.consultant) {
+                importedData.consultant = { name: '', address: '', phone: '', email: '', smtpHostname: '', smtpPort: '', smtpUsername: '', smtpPassword: '', taskEmailList: '', invoiceEmailList: '' };
+            } else {
+                if (importedData.consultant.smtpHostname === undefined) importedData.consultant.smtpHostname = importedData.consultant.smtpHost || importedData.consultant.hostname || '';
+                if (importedData.consultant.smtpPort === undefined) importedData.consultant.smtpPort = importedData.consultant.port !== undefined ? importedData.consultant.port : '';
+                if (importedData.consultant.smtpUsername === undefined) importedData.consultant.smtpUsername = importedData.consultant.smtpUser || importedData.consultant.username || '';
+                if (importedData.consultant.smtpPassword === undefined) importedData.consultant.smtpPassword = importedData.consultant.smtpPass || importedData.consultant.password || '';
+                if (importedData.consultant.taskEmailList === undefined) importedData.consultant.taskEmailList = importedData.consultant.taskEmails || importedData.consultant.task_email_list || '';
+                if (importedData.consultant.invoiceEmailList === undefined) importedData.consultant.invoiceEmailList = importedData.consultant.invoiceEmails || importedData.consultant.invoice_email_list || '';
+            }
+            attachConsultantAliases(importedData.consultant);
             state = importedData;
             await saveToDB(STORAGE_KEY, state);
             renderAll();
@@ -1435,6 +1604,17 @@ function setupEventListeners() {
                             task.end = new Date(startTime.getTime() + roundedDurationMs).toISOString();
                         }
                     });
+                    if (!importedData.consultant) {
+                        importedData.consultant = { name: '', address: '', phone: '', email: '', smtpHostname: '', smtpPort: '', smtpUsername: '', smtpPassword: '', taskEmailList: '', invoiceEmailList: '' };
+                    } else {
+                        if (importedData.consultant.smtpHostname === undefined) importedData.consultant.smtpHostname = importedData.consultant.smtpHost || importedData.consultant.hostname || '';
+                        if (importedData.consultant.smtpPort === undefined) importedData.consultant.smtpPort = importedData.consultant.port !== undefined ? importedData.consultant.port : '';
+                        if (importedData.consultant.smtpUsername === undefined) importedData.consultant.smtpUsername = importedData.consultant.smtpUser || importedData.consultant.username || '';
+                        if (importedData.consultant.smtpPassword === undefined) importedData.consultant.smtpPassword = importedData.consultant.smtpPass || importedData.consultant.password || '';
+                        if (importedData.consultant.taskEmailList === undefined) importedData.consultant.taskEmailList = importedData.consultant.taskEmails || importedData.consultant.task_email_list || '';
+                        if (importedData.consultant.invoiceEmailList === undefined) importedData.consultant.invoiceEmailList = importedData.consultant.invoiceEmails || importedData.consultant.invoice_email_list || '';
+                    }
+                    attachConsultantAliases(importedData.consultant);
                     state = importedData;
                     saveState();
                     alert('Data imported successfully!');
@@ -1451,7 +1631,14 @@ function setupEventListeners() {
 
     document.getElementById('reset-data').addEventListener('click', () => {
         if (confirm('Are you absolutely sure you want to delete ALL your data? This cannot be undone.')) {
-            state = { customers: [], projects: [], tasks: [], invoices: [] };
+            state = { 
+                consultant: { name: '', address: '', phone: '', email: '', smtpHostname: '', smtpPort: '', smtpUsername: '', smtpPassword: '', taskEmailList: '', invoiceEmailList: '' },
+                customers: [], 
+                projects: [], 
+                tasks: [], 
+                invoices: [] 
+            };
+            attachConsultantAliases(state.consultant);
             saveState();
         }
     });

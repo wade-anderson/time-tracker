@@ -784,6 +784,107 @@ async function runTests() {
         assert.strictEqual(promptCalled, false, "Prompt should not be displayed when token is already present");
     });
 
+    await test("Professional Profile: Form includes SMTP fields for Hostname, Port, Username, and Password", async () => {
+        const hostInput = document.getElementById('consultant-smtp-hostname');
+        const portInput = document.getElementById('consultant-smtp-port');
+        const userInput = document.getElementById('consultant-smtp-username');
+        const passInput = document.getElementById('consultant-smtp-password');
+
+        assert.ok(hostInput, "Hostname input should exist");
+        assert.ok(portInput, "Port input should exist");
+        assert.ok(userInput, "Username input should exist");
+        assert.ok(passInput, "Password input should exist");
+
+        // Verify aliased lookups work
+        assert.strictEqual(document.getElementById('consultant-smtp-host'), hostInput, "consultant-smtp-host alias should resolve to Hostname input");
+        assert.strictEqual(document.getElementById('consultant-smtp-user'), userInput, "consultant-smtp-user alias should resolve to Username input");
+        assert.strictEqual(document.getElementById('consultant-smtp-pass'), passInput, "consultant-smtp-pass alias should resolve to Password input");
+
+        // Verify input types
+        assert.strictEqual(portInput.getAttribute('type'), 'number', "Port input should be type number");
+        assert.strictEqual(passInput.getAttribute('type'), 'password', "Password input should be type password");
+
+        // Verify labels exist with expected text
+        const form = document.getElementById('consultant-form');
+        const formText = form.textContent;
+        assert.ok(formText.includes("Hostname"), "Form should have Hostname label");
+        assert.ok(formText.includes("Port"), "Form should have Port label");
+        assert.ok(formText.includes("Username"), "Form should have Username label");
+        assert.ok(formText.includes("Password"), "Form should have Password label");
+    });
+
+    await test("Professional Profile: Saving profile saves SMTP fields to state and IndexedDB", async () => {
+        document.getElementById('consultant-name').value = "Jane Doe";
+        document.getElementById('consultant-email').value = "jane@example.com";
+        document.getElementById('consultant-phone').value = "555-123-4567";
+        document.getElementById('consultant-address').value = "456 Tech Lane";
+        document.getElementById('consultant-smtp-hostname').value = "smtp.mailprovider.com";
+        document.getElementById('consultant-smtp-port').value = "587";
+        document.getElementById('consultant-smtp-username').value = "jane.smtp@example.com";
+        document.getElementById('consultant-smtp-password').value = "SuperSecretSMTPPass!";
+
+        await submitForm('consultant-form');
+
+        // Verify stored in IndexedDB
+        const storedState = await getStoredState();
+        assert.ok(storedState && storedState.consultant, "IndexedDB state should have consultant");
+        assert.strictEqual(storedState.consultant.smtpHostname, "smtp.mailprovider.com", "IDB consultant should have smtpHostname");
+        assert.strictEqual(storedState.consultant.smtpPort, "587", "IDB consultant should have smtpPort");
+        assert.strictEqual(storedState.consultant.smtpUsername, "jane.smtp@example.com", "IDB consultant should have smtpUsername");
+        assert.strictEqual(storedState.consultant.smtpPassword, "SuperSecretSMTPPass!", "IDB consultant should have smtpPassword");
+
+        // Verify toolbar click re-populates the form
+        document.getElementById('consultant-smtp-hostname').value = "";
+        document.getElementById('consultant-smtp-port').value = "";
+        document.getElementById('consultant-smtp-username').value = "";
+        document.getElementById('consultant-smtp-password').value = "";
+
+        document.getElementById('toolbar-profile').click();
+        assert.strictEqual(document.getElementById('consultant-smtp-hostname').value, "smtp.mailprovider.com", "Hostname field re-populated");
+        assert.strictEqual(document.getElementById('consultant-smtp-port').value, "587", "Port field re-populated");
+        assert.strictEqual(document.getElementById('consultant-smtp-username').value, "jane.smtp@example.com", "Username field re-populated");
+        assert.strictEqual(document.getElementById('consultant-smtp-password').value, "SuperSecretSMTPPass!", "Password field re-populated");
+    });
+
+    await test("Professional Profile: Form includes Task Email List and Invoice Email List fields", async () => {
+        const taskEmailListInput = document.getElementById('consultant-task-email-list');
+        const invoiceEmailListInput = document.getElementById('consultant-invoice-email-list');
+
+        assert.ok(taskEmailListInput, "Task Email List input should exist");
+        assert.ok(invoiceEmailListInput, "Invoice Email List input should exist");
+
+        // Verify aliased lookups work
+        assert.strictEqual(document.getElementById('task-email-list'), taskEmailListInput, "task-email-list alias should resolve");
+        assert.strictEqual(document.getElementById('invoice-email-list'), invoiceEmailListInput, "invoice-email-list alias should resolve");
+
+        // Verify labels exist with expected text
+        const form = document.getElementById('consultant-form');
+        const formText = form.textContent;
+        assert.ok(formText.includes("Task Email List"), "Form should have Task Email List label");
+        assert.ok(formText.includes("Invoice Email List"), "Form should have Invoice Email List label");
+    });
+
+    await test("Professional Profile: Saving profile saves Task Email List and Invoice Email List to state and IndexedDB", async () => {
+        document.getElementById('consultant-task-email-list').value = "dev@example.com, notifications@example.com";
+        document.getElementById('consultant-invoice-email-list').value = "billing@example.com, finance@example.com";
+
+        await submitForm('consultant-form');
+
+        // Verify stored in IndexedDB
+        const storedState = await getStoredState();
+        assert.ok(storedState && storedState.consultant, "IndexedDB state should have consultant");
+        assert.strictEqual(storedState.consultant.taskEmailList, "dev@example.com, notifications@example.com", "IDB consultant should have taskEmailList");
+        assert.strictEqual(storedState.consultant.invoiceEmailList, "billing@example.com, finance@example.com", "IDB consultant should have invoiceEmailList");
+
+        // Verify toolbar click re-populates the form
+        document.getElementById('consultant-task-email-list').value = "";
+        document.getElementById('consultant-invoice-email-list').value = "";
+
+        document.getElementById('toolbar-profile').click();
+        assert.strictEqual(document.getElementById('consultant-task-email-list').value, "dev@example.com, notifications@example.com", "Task Email List field re-populated");
+        assert.strictEqual(document.getElementById('consultant-invoice-email-list').value, "billing@example.com, finance@example.com", "Invoice Email List field re-populated");
+    });
+
     console.log(`\nTests Completed: ${passed} Passed, ${failed} Failed`);
     process.exit(failed > 0 ? 1 : 0);
 }
